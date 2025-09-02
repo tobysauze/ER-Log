@@ -188,7 +188,8 @@ function renderTableGroups(section) {
     g.rows.forEach((rowLabel, ri) => {
       table.appendChild(el('div', { class: 'row-label' }, rowLabel));
       section.columns.forEach((h, ci) => {
-        const key = `gen${gi+1}.${rowLabel.replace(/[^a-z0-9]+/gi,'_').toLowerCase()}.${h}`;
+        const prefix = g.keyPrefix ? g.keyPrefix : `group${gi+1}`;
+        const key = `${prefix}.${rowLabel.replace(/[^a-z0-9]+/gi,'_').toLowerCase()}.${h}`;
         const inp = el('input', { name: key, type: 'text' });
         table.appendChild(inp);
       });
