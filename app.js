@@ -156,7 +156,14 @@ function renderSchema() {
 
 function renderFieldsSection(section) {
   const card = el('section', { class: 'card' });
-  card.appendChild(el('h2', {}, section.title));
+  const header = el('div', { class: 'card-header' });
+  header.appendChild(el('h2', {}, section.title));
+  const toggleBtn = el('button', { type: 'button', class: 'btn icon', 'aria-label': 'Toggle' }, '▾');
+  toggleBtn.addEventListener('click', () => card.classList.toggle('open'));
+  header.addEventListener('click', (e) => { if (e.target === header || e.target.tagName !== 'BUTTON') card.classList.toggle('open'); });
+  card.appendChild(header);
+  const body = el('div', { class: 'card-body' });
+  card.appendChild(body);
   if (section.groups) {
     const wrap = el('div', { class: 'grid cols-' + (section.columns || 4) });
     section.groups.forEach((group) => {
@@ -167,18 +174,31 @@ function renderFieldsSection(section) {
       groupCard.appendChild(grid);
       wrap.appendChild(groupCard);
     });
-    card.appendChild(wrap);
+    body.appendChild(wrap);
   } else {
     const grid = el('div', { class: 'grid cols-' + (section.columns || 4) });
     (section.fields || []).forEach((f) => grid.appendChild(renderInput(f)));
-    card.appendChild(grid);
+    body.appendChild(grid);
+  }
+  // start collapsed by default
+  // Open header sections that are essential
+  if (section.id === 'header' || section.id === 'gen-control') {
+    card.classList.add('open');
   }
   return card;
 }
 
 function renderTableGroups(section) {
   const card = el('section', { class: 'card' });
-  card.appendChild(el('h2', {}, section.title));
+  const header = el('div', { class: 'card-header' });
+  header.appendChild(el('h2', {}, section.title));
+  header.addEventListener('click', () => card.classList.toggle('open'));
+  const toggleBtn = el('button', { type: 'button', class: 'btn icon', 'aria-label': 'Toggle' }, '▾');
+  toggleBtn.addEventListener('click', () => card.classList.toggle('open'));
+  header.appendChild(toggleBtn);
+  card.appendChild(header);
+  const body = el('div', { class: 'card-body' });
+  card.appendChild(body);
   (section.groups || []).forEach((g, gi) => {
     if (typeof window.__activeGenerators !== 'undefined') {
       if (g.genId && !window.__activeGenerators.has(g.genId)) return; // skip hidden gens
@@ -200,8 +220,11 @@ function renderTableGroups(section) {
       });
     });
     gCard.appendChild(table);
-    card.appendChild(gCard);
+    body.appendChild(gCard);
   });
+  // start collapsed by default
+  // Open if likely primary
+  if (section.id === 'main-engines') card.classList.add('open');
   return card;
 }
 
