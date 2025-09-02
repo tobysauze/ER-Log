@@ -69,9 +69,7 @@ const ENGINE_ROOM_SCHEMA = [
         'Boost Pressure (kPa)',
         'Inlet Air Temp (°C)',
         'Visual in enclosure (✓)',
-        'Fans Operating (✓)',
-        'Sea water Temp (°C)',
-        'Day Tank temp (°C)'
+        'Fans Operating (✓)'
       ] },
       { title: 'Generator 2', genId: 2, keyPrefix: 'gen2', rows: [
         'DG1/DG2/DG3',
@@ -92,9 +90,7 @@ const ENGINE_ROOM_SCHEMA = [
         'Boost Pressure (kPa)',
         'Inlet Air Temp (°C)',
         'Visual in enclosure (✓)',
-        'Fans Operating (✓)',
-        'Sea water Temp (°C)',
-        'Day Tank temp (°C)'
+        'Fans Operating (✓)'
       ] },
       { title: 'Generator 3', genId: 3, keyPrefix: 'gen3', rows: [
         'DG1/DG2/DG3',
@@ -115,10 +111,18 @@ const ENGINE_ROOM_SCHEMA = [
         'Boost Pressure (kPa)',
         'Inlet Air Temp (°C)',
         'Visual in enclosure (✓)',
-        'Fans Operating (✓)',
-        'Sea water Temp (°C)',
-        'Day Tank temp (°C)'
+        'Fans Operating (✓)'
       ] }
+    ]
+  },
+  {
+    id: 'other',
+    title: 'Other',
+    type: 'fields',
+    columns: 2,
+    fields: [
+      { key: 'other.seaWaterTemp', label: 'Sea water Temp (°C)', input: 'number', step: '0.1' },
+      { key: 'other.dayTankTemp', label: 'Day Tank temp (°C)', input: 'number', step: '0.1' }
     ]
   },
   {
