@@ -1,5 +1,5 @@
 /* Schema aligned to your Running Log Day photos */
-const HOURS_COLUMNS = ["08:00", "12:00", "16:00", "19:00", "21:00", "00:00"];
+const HOURS_COLUMNS = ["04:00", "08:00", "12:00", "16:00", "19:00", "21:00", "00:00"];
 
 const ENGINE_ROOM_SCHEMA = [
   {
