@@ -126,10 +126,10 @@ textarea { resize: vertical; min-height: 120px; }
 .home-actions { display: flex; gap: 12px; justify-content: center; }
 
 /* Table grid for hourly readings */
-.table-grid { display: grid; grid-template-columns: 220px repeat(12, minmax(80px, 1fr)); gap: 8px; align-items: center; }
+.table-grid { display: grid; grid-template-columns: 220px repeat(12, minmax(110px, 1fr)); gap: 8px; align-items: center; }
 .table-grid .th { font-weight: 700; color: #cfe0ff; letter-spacing: .06em; text-transform: uppercase; font-size: 12px; }
 .table-grid .th.sticky { position: sticky; left: 0; background: var(--card-subtle); padding-left: 6px; border-radius: 8px; }
-.table-grid .row-label { color: var(--muted); font-weight: 600; padding-left: 6px; }
+.table-grid .row-label { color: var(--muted); font-weight: 600; padding-left: 6px; position: sticky; left: 0; background: linear-gradient(90deg, var(--card-subtle) 60%, rgba(17,24,54,0)); border-radius: 8px; }
 .table-grid input { width: 100%; }
 
 /* Print styling */

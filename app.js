@@ -216,7 +216,9 @@ function renderTableGroups(section) {
     }
     const gCard = el('div', { class: 'card subtle' });
     gCard.appendChild(el('div', { class: 'subheading' }, g.title));
+    const colCount = (section.columns || []).length;
     const table = el('div', { class: 'table-grid' });
+    table.style.gridTemplateColumns = `220px repeat(${colCount}, minmax(110px, 1fr))`;
     // header row
     table.appendChild(el('div', { class: 'th sticky' }, 'Reading'));
     section.columns.forEach((h) => table.appendChild(el('div', { class: 'th' }, h)));
