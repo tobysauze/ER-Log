@@ -161,6 +161,8 @@ function renderSchema() {
       root.appendChild(renderTextarea(section));
     } else if (section.type === 'generator-control') {
       root.appendChild(renderGeneratorControl(section));
+    } else if (section.type === 'composite') {
+      root.appendChild(renderComposite(section));
     }
   });
 }
@@ -264,6 +266,34 @@ function el(tag, attrs = {}, text) {
   Object.entries(attrs || {}).forEach(([k, v]) => node.setAttribute(k, v));
   if (text !== undefined) node.textContent = text;
   return node;
+}
+
+function renderComposite(section) {
+  const card = el('section', { class: 'card' });
+  const header = el('div', { class: 'card-header' });
+  header.appendChild(el('h2', {}, section.title));
+  const toggleBtn = el('button', { type: 'button', class: 'btn icon', 'aria-label': 'Toggle' }, '▾');
+  toggleBtn.addEventListener('click', () => card.classList.toggle('open'));
+  header.addEventListener('click', (e) => { if (e.target === header || e.target.tagName !== 'BUTTON') card.classList.toggle('open'); });
+  card.appendChild(header);
+  const body = el('div', { class: 'card-body' });
+  card.appendChild(body);
+
+  (section.children || []).forEach((child) => {
+    if (child.subtype === 'generator-control') {
+      body.appendChild(renderGeneratorControl({ id: 'gen-control', type: 'generator-control', options: child.options }));
+    } else if (child.subtype === 'fields') {
+      const s = { id: 'generators-summary', type: 'fields', title: child.title || 'Summary', columns: child.columns, groups: child.groups };
+      body.appendChild(renderFieldsSectionFilteredByGen(s));
+    } else if (child.subtype === 'table-groups') {
+      const s = { id: 'generators-readings', type: 'table-groups', title: child.title || 'Hourly Readings', columns: child.columns, groups: child.groups };
+      body.appendChild(renderTableGroups(s));
+    }
+  });
+
+  // default open
+  card.classList.add('open');
+  return card;
 }
 
 function setCurrentDateTime() {

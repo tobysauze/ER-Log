@@ -16,40 +16,29 @@ const ENGINE_ROOM_SCHEMA = [
     ]
   },
   {
-    id: 'gen-control',
+    id: 'generators',
     title: 'Generators',
-    type: 'generator-control',
-    options: { ids: [1,2,3] }
-  },
-  {
-    id: 'generators-summary',
-    title: 'Generators — Summary',
-    type: 'fields',
-    columns: 3,
-    groups: [
-      { title: 'Generator 1', genId: 1, fields: [
-        { key: 'gen1.from', label: 'From / At', input: 'text' },
-        { key: 'gen1.to', label: 'To', input: 'text' },
-        { key: 'gen1.hours', label: 'Hours', input: 'number', step: '0.1' }
+    type: 'composite',
+    children: [
+      { subtype: 'generator-control', options: { ids: [1,2,3] } },
+      { subtype: 'fields', title: 'Summary', columns: 3, groups: [
+        { title: 'Generator 1', genId: 1, fields: [
+          { key: 'gen1.from', label: 'From / At', input: 'text' },
+          { key: 'gen1.to', label: 'To', input: 'text' },
+          { key: 'gen1.hours', label: 'Hours', input: 'number', step: '0.1' }
+        ]},
+        { title: 'Generator 2', genId: 2, fields: [
+          { key: 'gen2.from', label: 'From / At', input: 'text' },
+          { key: 'gen2.to', label: 'To', input: 'text' },
+          { key: 'gen2.hours', label: 'Hours', input: 'number', step: '0.1' }
+        ]},
+        { title: 'Generator 3', genId: 3, fields: [
+          { key: 'gen3.from', label: 'From / At', input: 'text' },
+          { key: 'gen3.to', label: 'To', input: 'text' },
+          { key: 'gen3.hours', label: 'Hours', input: 'number', step: '0.1' }
+        ]}
       ]},
-      { title: 'Generator 2', genId: 2, fields: [
-        { key: 'gen2.from', label: 'From / At', input: 'text' },
-        { key: 'gen2.to', label: 'To', input: 'text' },
-        { key: 'gen2.hours', label: 'Hours', input: 'number', step: '0.1' }
-      ]},
-      { title: 'Generator 3', genId: 3, fields: [
-        { key: 'gen3.from', label: 'From / At', input: 'text' },
-        { key: 'gen3.to', label: 'To', input: 'text' },
-        { key: 'gen3.hours', label: 'Hours', input: 'number', step: '0.1' }
-      ]}
-    ]
-  },
-  {
-    id: 'generators-readings',
-    title: 'Generators — Hourly Readings',
-    type: 'table-groups',
-    columns: HOURS_COLUMNS,
-    groups: [
+      { subtype: 'table-groups', title: 'Hourly Readings', columns: HOURS_COLUMNS, groups: [
       { title: 'Generator 1', genId: 1, keyPrefix: 'gen1', rows: [
         'DG1/DG2/DG3',
         '#',
@@ -113,17 +102,7 @@ const ENGINE_ROOM_SCHEMA = [
         'Visual in enclosure (✓)',
         'Fans Operating (✓)'
       ] }
-    ]
-  },
-  {
-    id: 'other',
-    title: 'Other',
-    type: 'fields',
-    columns: 2,
-    fields: [
-      { key: 'other.seaWaterTemp', label: 'Sea water Temp (°C)', input: 'number', step: '0.1' },
-      { key: 'other.dayTankTemp', label: 'Day Tank temp (°C)', input: 'number', step: '0.1' }
-    ]
+    ]}
   },
   {
     id: 'main-engines',
@@ -183,6 +162,16 @@ const ENGINE_ROOM_SCHEMA = [
           'Ex Sea water press (kPa)'
         ]
       }
+    ]
+  },
+  {
+    id: 'other',
+    title: 'Other',
+    type: 'fields',
+    columns: 2,
+    fields: [
+      { key: 'other.seaWaterTemp', label: 'Sea water Temp (°C)', input: 'number', step: '0.1' },
+      { key: 'other.dayTankTemp', label: 'Day Tank temp (°C)', input: 'number', step: '0.1' }
     ]
   }
 ];
