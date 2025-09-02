@@ -10,28 +10,30 @@
 
   yearSpan.textContent = new Date().getFullYear();
 
-  // Signature pad
-  const ctx = signatureCanvas.getContext('2d');
-  ctx.lineWidth = 2.2;
-  ctx.lineCap = 'round';
-  ctx.strokeStyle = '#67a1ff';
+  // Signature pad (optional)
+  if (signatureCanvas && typeof signatureCanvas.getContext === 'function') {
+    const ctx = signatureCanvas.getContext('2d');
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#67a1ff';
 
-  let drawing = false;
-  const getPos = (e) => {
-    const rect = signatureCanvas.getBoundingClientRect();
-    const point = e.touches ? e.touches[0] : e;
-    return { x: point.clientX - rect.left, y: point.clientY - rect.top };
-  };
-  const start = (e) => { drawing = true; ctx.beginPath(); const p = getPos(e); ctx.moveTo(p.x, p.y); };
-  const draw = (e) => { if (!drawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); };
-  const end = () => { drawing = false; };
-  signatureCanvas.addEventListener('mousedown', start);
-  signatureCanvas.addEventListener('mousemove', draw);
-  window.addEventListener('mouseup', end);
-  signatureCanvas.addEventListener('touchstart', (e)=>{e.preventDefault(); start(e);});
-  signatureCanvas.addEventListener('touchmove', (e)=>{e.preventDefault(); draw(e);});
-  signatureCanvas.addEventListener('touchend', end);
-  clearSigBtn.addEventListener('click', () => ctx.clearRect(0,0,signatureCanvas.width, signatureCanvas.height));
+    let drawing = false;
+    const getPos = (e) => {
+      const rect = signatureCanvas.getBoundingClientRect();
+      const point = e.touches ? e.touches[0] : e;
+      return { x: point.clientX - rect.left, y: point.clientY - rect.top };
+    };
+    const start = (e) => { drawing = true; ctx.beginPath(); const p = getPos(e); ctx.moveTo(p.x, p.y); };
+    const draw = (e) => { if (!drawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); };
+    const end = () => { drawing = false; };
+    signatureCanvas.addEventListener('mousedown', start);
+    signatureCanvas.addEventListener('mousemove', draw);
+    window.addEventListener('mouseup', end);
+    signatureCanvas.addEventListener('touchstart', (e)=>{e.preventDefault(); start(e);});
+    signatureCanvas.addEventListener('touchmove', (e)=>{e.preventDefault(); draw(e);});
+    signatureCanvas.addEventListener('touchend', end);
+    if (clearSigBtn) clearSigBtn.addEventListener('click', () => ctx.clearRect(0,0,signatureCanvas.width, signatureCanvas.height));
+  }
 
   // Dynamic rendering from schema
   renderSchema();
@@ -43,8 +45,10 @@
     for (const [key, value] of data.entries()) {
       setDeep(object, key, value);
     }
-    // include signature as data URL
-    object.signature = signatureCanvas.toDataURL();
+    // include signature as data URL if present
+    if (signatureCanvas && typeof signatureCanvas.toDataURL === 'function') {
+      object.signature = signatureCanvas.toDataURL();
+    }
     return object;
   }
   function setDeep(obj, path, value) {
@@ -73,12 +77,15 @@
       if (val !== undefined) el.value = val;
     });
     // signature
-    if (data.signature) {
-      const img = new Image();
-      img.onload = () => ctx.drawImage(img, 0, 0);
-      img.src = data.signature;
-    } else {
-      ctx.clearRect(0,0,signatureCanvas.width, signatureCanvas.height);
+    if (signatureCanvas && typeof signatureCanvas.getContext === 'function') {
+      const ctx = signatureCanvas.getContext('2d');
+      if (data.signature) {
+        const img = new Image();
+        img.onload = () => ctx.drawImage(img, 0, 0);
+        img.src = data.signature;
+      } else {
+        ctx.clearRect(0,0,signatureCanvas.width, signatureCanvas.height);
+      }
     }
   }
   function getDeep(obj, path) {
@@ -150,6 +157,8 @@ function renderSchema() {
       root.appendChild(renderTextarea(section));
     } else if (section.type === 'generator-control') {
       root.appendChild(renderGeneratorControl(section));
+    } else if (section.type === 'composite') {
+      root.appendChild(renderComposite(section));
     }
   });
 }
@@ -185,6 +194,33 @@ function renderFieldsSection(section) {
   if (section.id === 'header' || section.id === 'gen-control') {
     card.classList.add('open');
   }
+  return card;
+}
+
+function renderComposite(section) {
+  const card = el('section', { class: 'card open' });
+  const header = el('div', { class: 'card-header' });
+  header.appendChild(el('h2', {}, section.title));
+  header.addEventListener('click', () => card.classList.toggle('open'));
+  const toggleBtn = el('button', { type: 'button', class: 'btn icon', 'aria-label': 'Toggle' }, '▾');
+  toggleBtn.addEventListener('click', () => card.classList.toggle('open'));
+  header.appendChild(toggleBtn);
+  card.appendChild(header);
+  const body = el('div', { class: 'card-body' });
+  card.appendChild(body);
+
+  (section.children || []).forEach((child) => {
+    if (child.subtype === 'generator-control') {
+      body.appendChild(renderGeneratorControl({ id: 'gen-control', type: 'generator-control', options: child.options }));
+    } else if (child.subtype === 'fields') {
+      const s = { id: 'generators-summary', type: 'fields', title: child.title || 'Summary', columns: child.columns, groups: child.groups };
+      body.appendChild(renderFieldsSection(s));
+    } else if (child.subtype === 'table-groups') {
+      const s = { id: 'generators-readings', type: 'table-groups', title: child.title || 'Hourly Readings', columns: child.columns, groups: child.groups };
+      body.appendChild(renderTableGroups(s));
+    }
+  });
+
   return card;
 }
 
