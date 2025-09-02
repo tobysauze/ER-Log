@@ -113,6 +113,12 @@ textarea { resize: vertical; min-height: 120px; }
 
 .app-footer { text-align: center; color: var(--muted); padding: 30px 0; border-top: 1px solid rgba(255,255,255,.06); }
 
+/* Home */
+.home { display: grid; place-items: center; min-height: calc(100dvh - 100px); padding: 20px; }
+.home-hero { text-align: center; background: linear-gradient(180deg, rgba(46,102,255,.14), rgba(46,102,255,.06)); border: 1px solid rgba(255,255,255,.08); box-shadow: var(--shadow); padding: 30px 24px; border-radius: 20px; }
+.home-hero h2 { margin: 0 0 16px; letter-spacing: .08em; text-transform: uppercase; color: #cfe0ff; }
+.home-actions { display: flex; gap: 12px; justify-content: center; }
+
 /* Table grid for hourly readings */
 .table-grid { display: grid; grid-template-columns: 220px repeat(12, minmax(80px, 1fr)); gap: 8px; align-items: center; }
 .table-grid .th { font-weight: 700; color: #cfe0ff; letter-spacing: .06em; text-transform: uppercase; font-size: 12px; }

@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Mary-Jean II — Engine Room Logs</title>
+    <title>Mary-Jean II — ER Main Log</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="
@@ -17,24 +17,26 @@
         <img src="./assets/mary-jean-ii.png" alt="Mary-Jean II Logo" onerror="this.closest('.brand').classList.add('no-image')">
         <div class="brand-text">
           <h1>Mary-Jean II</h1>
-          <p>Engine Room Logs</p>
+          <p>ER Main Log</p>
         </div>
+      </div>
+      <div class="header-actions">
+        <a href="./index.html" class="btn secondary">Home</a>
       </div>
     </header>
 
-    <main class="home">
-      <div class="home-hero">
-        <h2>Choose a Log</h2>
-        <div class="home-actions">
-          <a href="./main.html" class="btn accent">ER Main Log</a>
-          <a href="./running.html" class="btn">ER Running Log</a>
-        </div>
-      </div>
+    <main class="container">
+      <section class="card">
+        <h2>Coming soon</h2>
+        <p>This page will host the ER Main Log. Tell me the fields/structure and I’ll build it to match.</p>
+      </section>
     </main>
 
     <footer class="app-footer">
       <span>© <span id="year"></span> Mary-Jean II — Engine Room</span>
     </footer>
+
+    <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
   </body>
   </html>
 
