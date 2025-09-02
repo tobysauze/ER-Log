@@ -148,6 +148,8 @@ function renderSchema() {
       root.appendChild(renderTableGroups(section));
     } else if (section.type === 'textarea') {
       root.appendChild(renderTextarea(section));
+    } else if (section.type === 'generator-control') {
+      root.appendChild(renderGeneratorControl(section));
     }
   });
 }
@@ -178,6 +180,9 @@ function renderTableGroups(section) {
   const card = el('section', { class: 'card' });
   card.appendChild(el('h2', {}, section.title));
   (section.groups || []).forEach((g, gi) => {
+    if (typeof window.__activeGenerators !== 'undefined') {
+      if (g.genId && !window.__activeGenerators.has(g.genId)) return; // skip hidden gens
+    }
     const gCard = el('div', { class: 'card subtle' });
     gCard.appendChild(el('div', { class: 'subheading' }, g.title));
     const table = el('div', { class: 'table-grid' });
@@ -223,6 +228,105 @@ function el(tag, attrs = {}, text) {
   Object.entries(attrs || {}).forEach(([k, v]) => node.setAttribute(k, v));
   if (text !== undefined) node.textContent = text;
   return node;
+}
+
+function renderGeneratorControl(section) {
+  const card = el('section', { class: 'card' });
+  card.appendChild(el('h2', {}, section.title));
+  const wrap = el('div', { class: 'gen-control' });
+
+  // Controls: number running and which
+  const countLabel = el('label');
+  countLabel.appendChild(el('span', {}, 'How many running?'));
+  const countSelect = el('select', { id: 'genCount' });
+  [0,1,2,3].forEach(n => countSelect.appendChild(el('option', { value: String(n) }, String(n))));
+  countLabel.appendChild(countSelect);
+  wrap.appendChild(countLabel);
+
+  const chips = el('div', { class: 'chips' });
+  const ids = (section.options && section.options.ids) || [1,2,3];
+  const chipMap = new Map();
+  ids.forEach(id => {
+    const c = el('button', { type: 'button', class: 'chip', 'data-id': String(id) }, `Gen ${id}`);
+    c.addEventListener('click', () => {
+      if (c.classList.contains('active')) {
+        c.classList.remove('active');
+      } else {
+        c.classList.add('active');
+      }
+      syncGenSelection();
+    });
+    chipMap.set(id, c);
+    chips.appendChild(c);
+  });
+  wrap.appendChild(chips);
+
+  function syncGenSelection() {
+    const active = new Set();
+    chipMap.forEach((btn, id) => { if (btn.classList.contains('active')) active.add(id); });
+    // enforce count
+    const target = Number(countSelect.value);
+    if (active.size > target) {
+      // turn off extras (last toggled off)
+      const arr = Array.from(active);
+      while (arr.length > target) {
+        const id = arr.pop();
+        const btn = chipMap.get(id);
+        if (btn) btn.classList.remove('active');
+      }
+      return syncGenSelection();
+    }
+    if (active.size < target) {
+      // auto-activate earliest unchecked
+      for (const id of ids) {
+        if (active.size >= target) break;
+        if (!chipMap.get(id).classList.contains('active')) {
+          chipMap.get(id).classList.add('active');
+          active.add(id);
+        }
+      }
+    }
+    window.__activeGenerators = active; // global selection
+    rerenderDynamicSections();
+  }
+
+  countSelect.addEventListener('change', syncGenSelection);
+  // initialize
+  countSelect.value = '0';
+  window.__activeGenerators = new Set();
+
+  card.appendChild(wrap);
+  return card;
+}
+
+function rerenderDynamicSections() {
+  const root = document.getElementById('sections');
+  // remove and rebuild only generator-related sections and following tables
+  const idsToRebuild = new Set(['generators-summary', 'generators-readings']);
+  // clear existing for those ids
+  Array.from(root.children).forEach((node) => {
+    const header = node.querySelector('h2');
+    if (!header) return;
+    const title = header.textContent || '';
+    if (title.startsWith('Generators')) root.removeChild(node);
+  });
+  // find insertion point (after gen-control)
+  const afterNode = Array.from(root.children).find(n => (n.querySelector('h2')||{}).textContent === 'Generators');
+  const insertIndex = afterNode ? Array.from(root.children).indexOf(afterNode) + 1 : root.children.length;
+  const frag = document.createDocumentFragment();
+  window.ENGINE_ROOM_SCHEMA.forEach((s) => {
+    if (s.id === 'generators-summary') frag.appendChild(renderFieldsSectionFilteredByGen(s));
+    if (s.id === 'generators-readings') frag.appendChild(renderTableGroups(s));
+  });
+  // insert
+  const refNode = root.children[insertIndex] || null;
+  root.insertBefore(frag, refNode);
+}
+
+function renderFieldsSectionFilteredByGen(section) {
+  const clone = JSON.parse(JSON.stringify(section));
+  clone.groups = (clone.groups || []).filter(g => !g.genId || (window.__activeGenerators && window.__activeGenerators.has(g.genId)));
+  return renderFieldsSection(clone);
 }
 
 
