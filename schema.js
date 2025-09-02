@@ -9,6 +9,7 @@ const ENGINE_ROOM_SCHEMA = [
     columns: 4,
     fields: [
       { key: 'date', label: 'Date', input: 'date', required: true },
+      { key: 'time', label: 'Time', input: 'time', required: true },
       { key: 'from', label: 'From (Port)', input: 'text' },
       { key: 'to', label: 'To (Port)', input: 'text' },
       { key: 'route', label: 'Route / Notes', input: 'text', span: 2 }

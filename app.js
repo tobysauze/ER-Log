@@ -35,6 +35,15 @@
 
   // Dynamic rendering from schema
   renderSchema();
+  // Prefill with last readings if available, then set current date/time
+  try {
+    const last = localStorage.getItem('erlog:lastSubmit');
+    if (last) {
+      populateForm(JSON.parse(last));
+      toast('Loaded last readings');
+    }
+  } catch (e) { /* ignore */ }
+  setCurrentDateTime();
 
   // Save/Load draft to localStorage
   function serializeForm(formEl) {
@@ -105,6 +114,8 @@
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
+    // ensure timestamp is up to date
+    setCurrentDateTime();
     const payload = serializeForm(form);
     console.log('ER Log submission', payload);
     localStorage.setItem('erlog:lastSubmit', JSON.stringify(payload));
@@ -251,6 +262,20 @@ function el(tag, attrs = {}, text) {
   Object.entries(attrs || {}).forEach(([k, v]) => node.setAttribute(k, v));
   if (text !== undefined) node.textContent = text;
   return node;
+}
+
+function setCurrentDateTime() {
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  const yyyy = now.getFullYear();
+  const mm = pad(now.getMonth() + 1);
+  const dd = pad(now.getDate());
+  const hh = pad(now.getHours());
+  const mi = pad(now.getMinutes());
+  const d = document.querySelector('input[name="date"]');
+  if (d && !d.value) d.value = `${yyyy}-${mm}-${dd}`;
+  const t = document.querySelector('input[name="time"]');
+  if (t) t.value = `${hh}:${mi}`;
 }
 
 function renderGeneratorControl(section) {
