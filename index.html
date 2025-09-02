@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mary-Jean II — Engine Room Log</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand">
+        <img src="./assets/mary-jean-ii.png" alt="Mary-Jean II Logo" onerror="this.closest('.brand').classList.add('no-image')">
+        <div class="brand-text">
+          <h1>Mary-Jean II</h1>
+          <p>Engine Room Log</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="loadDraftBtn" class="btn secondary">Load Draft</button>
+        <button id="saveDraftBtn" class="btn">Save Draft</button>
+        <button id="printBtn" class="btn accent">Export / Print</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <form id="erLogForm">
+        <noscript>
+          <section class="card">
+            <h2>JavaScript Required</h2>
+            <p>Please enable JavaScript to render the Engine Room Log sections.</p>
+          </section>
+        </noscript>
+        <div id="sections"></div>
+
+        <section class="card">
+          <h2>Engineer Signature</h2>
+          <div class="signature-block">
+            <canvas id="signaturePad" class="signature-canvas" width="800" height="180"></canvas>
+            <div class="row-actions">
+              <button type="button" id="clearSignatureBtn" class="btn secondary">Clear</button>
+            </div>
+          </div>
+        </section>
+
+        <div class="form-actions">
+          <button type="reset" class="btn secondary">Reset Form</button>
+          <button type="submit" class="btn accent">Submit Entry</button>
+        </div>
+      </form>
+    </main>
+
+    <footer class="app-footer">
+      <span>© <span id="year"></span> Mary-Jean II — Engine Room</span>
+    </footer>
+
+    <template id="generatorTemplate">
+      <div class="generator card subtle">
+        <div class="generator-header">
+          <h3>Generator <span class="gen-index"></span></h3>
+          <button type="button" class="btn icon remove-gen" aria-label="Remove generator">✕</button>
+        </div>
+        <div class="grid cols-6">
+          <label>
+            <span>Running?</span>
+            <select name="running">
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+          </label>
+          <label>
+            <span>Hours</span>
+            <input type="number" step="0.1" name="hours">
+          </label>
+          <label>
+            <span>Load (%)</span>
+            <input type="number" step="0.1" name="loadPct">
+          </label>
+          <label>
+            <span>Voltage (V)</span>
+            <input type="number" step="0.1" name="voltage">
+          </label>
+          <label>
+            <span>Frequency (Hz)</span>
+            <input type="number" step="0.1" name="frequency">
+          </label>
+          <label>
+            <span>Coolant Temp (°C)</span>
+            <input type="number" step="0.1" name="coolantTemp">
+          </label>
+          <label>
+            <span>Oil Pressure (bar)</span>
+            <input type="number" step="0.1" name="oilPressure">
+          </label>
+          <label class="col-span-3">
+            <span>Notes</span>
+            <input type="text" name="notes" placeholder="Optional">
+          </label>
+        </div>
+      </div>
+    </template>
+
+    <script src="./schema.js"></script>
+    <script src="./app.js"></script>
+  </body>
+  </html>
+
+

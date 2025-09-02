@@ -1,0 +1,26 @@
+# macOS
+.DS_Store
+
+# Local files
+.env
+.env.*
+
+# Node / tooling (future-proof)
+node_modules/
+dist/
+build/
+.parcel-cache/
+.next/
+out/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor
+.vscode/
+.idea/
+
+
