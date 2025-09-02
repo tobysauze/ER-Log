@@ -11,50 +11,30 @@
   yearSpan.textContent = new Date().getFullYear();
 
   // Signature pad
-  function getSignatureCtx() {
-    return signatureCanvas ? signatureCanvas.getContext('2d') : null;
-  }
+  const ctx = signatureCanvas.getContext('2d');
+  ctx.lineWidth = 2.2;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#67a1ff';
 
-  if (signatureCanvas) {
-    const ctx = getSignatureCtx();
-    ctx.lineWidth = 2.2;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = '#67a1ff';
-    let drawing = false;
-    const getPos = (e) => {
-      const rect = signatureCanvas.getBoundingClientRect();
-      const point = e.touches ? e.touches[0] : e;
-      return { x: point.clientX - rect.left, y: point.clientY - rect.top };
-    };
-    const start = (e) => { drawing = true; ctx.beginPath(); const p = getPos(e); ctx.moveTo(p.x, p.y); };
-    const draw = (e) => { if (!drawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); };
-    const end = () => { drawing = false; };
-    signatureCanvas.addEventListener('mousedown', start);
-    signatureCanvas.addEventListener('mousemove', draw);
-    window.addEventListener('mouseup', end);
-    signatureCanvas.addEventListener('touchstart', (e)=>{e.preventDefault(); start(e);});
-    signatureCanvas.addEventListener('touchmove', (e)=>{e.preventDefault(); draw(e);});
-    signatureCanvas.addEventListener('touchend', end);
-    if (clearSigBtn) clearSigBtn.addEventListener('click', () => {
-      const c = getSignatureCtx();
-      if (c) c.clearRect(0,0,signatureCanvas.width, signatureCanvas.height);
-    });
-  }
+  let drawing = false;
+  const getPos = (e) => {
+    const rect = signatureCanvas.getBoundingClientRect();
+    const point = e.touches ? e.touches[0] : e;
+    return { x: point.clientX - rect.left, y: point.clientY - rect.top };
+  };
+  const start = (e) => { drawing = true; ctx.beginPath(); const p = getPos(e); ctx.moveTo(p.x, p.y); };
+  const draw = (e) => { if (!drawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); };
+  const end = () => { drawing = false; };
+  signatureCanvas.addEventListener('mousedown', start);
+  signatureCanvas.addEventListener('mousemove', draw);
+  window.addEventListener('mouseup', end);
+  signatureCanvas.addEventListener('touchstart', (e)=>{e.preventDefault(); start(e);});
+  signatureCanvas.addEventListener('touchmove', (e)=>{e.preventDefault(); draw(e);});
+  signatureCanvas.addEventListener('touchend', end);
+  clearSigBtn.addEventListener('click', () => ctx.clearRect(0,0,signatureCanvas.width, signatureCanvas.height));
 
   // Dynamic rendering from schema
   renderSchema();
-  // ensure sections visible initially
-  expandAllSections();
-  // Prefill with last readings if available, then set current date/time
-  try {
-    const last = localStorage.getItem('erlog:lastSubmit');
-    if (last) {
-      populateForm(JSON.parse(last));
-      toast('Loaded last readings');
-    }
-  } catch (e) { /* ignore */ }
-  setCurrentDateTime();
-  focusNearestTimeColumn();
 
   // Save/Load draft to localStorage
   function serializeForm(formEl) {
@@ -64,7 +44,7 @@
       setDeep(object, key, value);
     }
     // include signature as data URL
-    if (signatureCanvas) object.signature = signatureCanvas.toDataURL();
+    object.signature = signatureCanvas.toDataURL();
     return object;
   }
   function setDeep(obj, path, value) {
@@ -93,14 +73,12 @@
       if (val !== undefined) el.value = val;
     });
     // signature
-    if (signatureCanvas && data.signature) {
+    if (data.signature) {
       const img = new Image();
-      const c = getSignatureCtx();
-      if (c) { img.onload = () => c.drawImage(img, 0, 0); }
+      img.onload = () => ctx.drawImage(img, 0, 0);
       img.src = data.signature;
-    } else if (signatureCanvas) {
-      const c = getSignatureCtx();
-      if (c) c.clearRect(0,0,signatureCanvas.width, signatureCanvas.height);
+    } else {
+      ctx.clearRect(0,0,signatureCanvas.width, signatureCanvas.height);
     }
   }
   function getDeep(obj, path) {
@@ -127,8 +105,6 @@
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    // ensure timestamp is up to date
-    setCurrentDateTime();
     const payload = serializeForm(form);
     console.log('ER Log submission', payload);
     localStorage.setItem('erlog:lastSubmit', JSON.stringify(payload));
@@ -174,8 +150,6 @@ function renderSchema() {
       root.appendChild(renderTextarea(section));
     } else if (section.type === 'generator-control') {
       root.appendChild(renderGeneratorControl(section));
-    } else if (section.type === 'composite') {
-      root.appendChild(renderComposite(section));
     }
   });
 }
@@ -231,9 +205,7 @@ function renderTableGroups(section) {
     }
     const gCard = el('div', { class: 'card subtle' });
     gCard.appendChild(el('div', { class: 'subheading' }, g.title));
-    const colCount = (section.columns || []).length;
     const table = el('div', { class: 'table-grid' });
-    table.style.gridTemplateColumns = `220px repeat(${colCount}, minmax(110px, 1fr))`;
     // header row
     table.appendChild(el('div', { class: 'th sticky' }, 'Reading'));
     section.columns.forEach((h) => table.appendChild(el('div', { class: 'th' }, h)));
@@ -279,93 +251,6 @@ function el(tag, attrs = {}, text) {
   Object.entries(attrs || {}).forEach(([k, v]) => node.setAttribute(k, v));
   if (text !== undefined) node.textContent = text;
   return node;
-}
-
-function renderComposite(section) {
-  const card = el('section', { class: 'card' });
-  const header = el('div', { class: 'card-header' });
-  header.appendChild(el('h2', {}, section.title));
-  const toggleBtn = el('button', { type: 'button', class: 'btn icon', 'aria-label': 'Toggle' }, '▾');
-  toggleBtn.addEventListener('click', () => card.classList.toggle('open'));
-  header.addEventListener('click', (e) => { if (e.target === header || e.target.tagName !== 'BUTTON') card.classList.toggle('open'); });
-  card.appendChild(header);
-  const body = el('div', { class: 'card-body' });
-  card.appendChild(body);
-
-  (section.children || []).forEach((child) => {
-    if (child.subtype === 'generator-control') {
-      body.appendChild(renderGeneratorControl({ id: 'gen-control', type: 'generator-control', options: child.options }));
-    } else if (child.subtype === 'fields') {
-      const s = { id: 'generators-summary', type: 'fields', title: child.title || 'Summary', columns: child.columns, groups: child.groups };
-      body.appendChild(renderFieldsSectionFilteredByGen(s));
-    } else if (child.subtype === 'table-groups') {
-      const s = { id: 'generators-readings', type: 'table-groups', title: child.title || 'Hourly Readings', columns: child.columns, groups: child.groups };
-      body.appendChild(renderTableGroups(s));
-    }
-  });
-
-  // default open
-  card.classList.add('open');
-  return card;
-}
-
-function setCurrentDateTime() {
-  const now = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
-  const yyyy = now.getFullYear();
-  const mm = pad(now.getMonth() + 1);
-  const dd = pad(now.getDate());
-  const hh = pad(now.getHours());
-  const mi = pad(now.getMinutes());
-  const d = document.querySelector('input[name="date"]');
-  if (d && !d.value) d.value = `${yyyy}-${mm}-${dd}`;
-  const t = document.querySelector('input[name="time"]');
-  if (t) t.value = `${hh}:${mi}`;
-}
-
-function parseTimeLabel(label) {
-  // expects HH:MM
-  const [h, m] = label.split(':').map(Number);
-  return h * 60 + (m || 0);
-}
-
-function getNearestColumnIndex() {
-  const labels = (window.HOURS_COLUMNS || []).map((s) => s);
-  if (labels.length === 0) return 0;
-  const now = new Date();
-  const nowMin = now.getHours() * 60 + now.getMinutes();
-  let bestIdx = 0;
-  let bestDiff = Infinity;
-  labels.forEach((lab, idx) => {
-    const t = parseTimeLabel(lab.replace(/[^0-9:]/g, ''));
-    const diff = Math.abs(nowMin - t);
-    if (diff < bestDiff) { bestDiff = diff; bestIdx = idx; }
-  });
-  return bestIdx;
-}
-
-function focusNearestTimeColumn() {
-  const idx = getNearestColumnIndex();
-  document.querySelectorAll('.table-grid').forEach((grid) => {
-    // hide all input columns except header first column and the nearest time col
-    const children = Array.from(grid.children);
-    // grid structure: header row first, then repeated rows
-    const colCount = (window.HOURS_COLUMNS || []).length + 1; // +1 for label column
-    children.forEach((node, i) => {
-      const col = i % (colCount);
-      if (i < colCount) {
-        // header row: keep label and nearest time header
-        if (!(col === 0 || col === idx + 1)) node.classList.add('hidden');
-      } else {
-        // data rows: keep label and nearest time cell
-        if (!(col === 0 || col === idx + 1)) node.classList.add('hidden');
-      }
-    });
-  });
-}
-
-function expandAllSections() {
-  document.querySelectorAll('.card').forEach((c) => c.classList.add('open'));
 }
 
 function renderGeneratorControl(section) {
@@ -439,24 +324,26 @@ function renderGeneratorControl(section) {
 
 function rerenderDynamicSections() {
   const root = document.getElementById('sections');
-  const genCard = Array.from(root.children).find(n => (n.querySelector('h2')||{}).textContent === 'Generators');
-  if (!genCard) return;
-  const body = genCard.querySelector('.card-body');
-  if (!body) return;
-  body.innerHTML = '';
-  const schema = (window.ENGINE_ROOM_SCHEMA || []).find(s => s.id === 'generators');
-  if (!schema) return;
-  (schema.children || []).forEach((child) => {
-    if (child.subtype === 'generator-control') {
-      body.appendChild(renderGeneratorControl({ id: 'gen-control', type: 'generator-control', options: child.options }));
-    } else if (child.subtype === 'fields') {
-      const s = { id: 'generators-summary', type: 'fields', title: child.title || 'Summary', columns: child.columns, groups: child.groups };
-      body.appendChild(renderFieldsSectionFilteredByGen(s));
-    } else if (child.subtype === 'table-groups') {
-      const s = { id: 'generators-readings', type: 'table-groups', title: child.title || 'Hourly Readings', columns: child.columns, groups: child.groups };
-      body.appendChild(renderTableGroups(s));
-    }
+  // remove and rebuild only generator-related sections and following tables
+  const idsToRebuild = new Set(['generators-summary', 'generators-readings']);
+  // clear existing for those ids
+  Array.from(root.children).forEach((node) => {
+    const header = node.querySelector('h2');
+    if (!header) return;
+    const title = header.textContent || '';
+    if (title.startsWith('Generators')) root.removeChild(node);
   });
+  // find insertion point (after gen-control)
+  const afterNode = Array.from(root.children).find(n => (n.querySelector('h2')||{}).textContent === 'Generators');
+  const insertIndex = afterNode ? Array.from(root.children).indexOf(afterNode) + 1 : root.children.length;
+  const frag = document.createDocumentFragment();
+  window.ENGINE_ROOM_SCHEMA.forEach((s) => {
+    if (s.id === 'generators-summary') frag.appendChild(renderFieldsSectionFilteredByGen(s));
+    if (s.id === 'generators-readings') frag.appendChild(renderTableGroups(s));
+  });
+  // insert
+  const refNode = root.children[insertIndex] || null;
+  root.insertBefore(frag, refNode);
 }
 
 function renderFieldsSectionFilteredByGen(section) {
