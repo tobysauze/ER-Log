@@ -11,30 +11,40 @@
   yearSpan.textContent = new Date().getFullYear();
 
   // Signature pad
-  const ctx = signatureCanvas.getContext('2d');
-  ctx.lineWidth = 2.2;
-  ctx.lineCap = 'round';
-  ctx.strokeStyle = '#67a1ff';
+  function getSignatureCtx() {
+    return signatureCanvas ? signatureCanvas.getContext('2d') : null;
+  }
 
-  let drawing = false;
-  const getPos = (e) => {
-    const rect = signatureCanvas.getBoundingClientRect();
-    const point = e.touches ? e.touches[0] : e;
-    return { x: point.clientX - rect.left, y: point.clientY - rect.top };
-  };
-  const start = (e) => { drawing = true; ctx.beginPath(); const p = getPos(e); ctx.moveTo(p.x, p.y); };
-  const draw = (e) => { if (!drawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); };
-  const end = () => { drawing = false; };
-  signatureCanvas.addEventListener('mousedown', start);
-  signatureCanvas.addEventListener('mousemove', draw);
-  window.addEventListener('mouseup', end);
-  signatureCanvas.addEventListener('touchstart', (e)=>{e.preventDefault(); start(e);});
-  signatureCanvas.addEventListener('touchmove', (e)=>{e.preventDefault(); draw(e);});
-  signatureCanvas.addEventListener('touchend', end);
-  clearSigBtn.addEventListener('click', () => ctx.clearRect(0,0,signatureCanvas.width, signatureCanvas.height));
+  if (signatureCanvas) {
+    const ctx = getSignatureCtx();
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#67a1ff';
+    let drawing = false;
+    const getPos = (e) => {
+      const rect = signatureCanvas.getBoundingClientRect();
+      const point = e.touches ? e.touches[0] : e;
+      return { x: point.clientX - rect.left, y: point.clientY - rect.top };
+    };
+    const start = (e) => { drawing = true; ctx.beginPath(); const p = getPos(e); ctx.moveTo(p.x, p.y); };
+    const draw = (e) => { if (!drawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); };
+    const end = () => { drawing = false; };
+    signatureCanvas.addEventListener('mousedown', start);
+    signatureCanvas.addEventListener('mousemove', draw);
+    window.addEventListener('mouseup', end);
+    signatureCanvas.addEventListener('touchstart', (e)=>{e.preventDefault(); start(e);});
+    signatureCanvas.addEventListener('touchmove', (e)=>{e.preventDefault(); draw(e);});
+    signatureCanvas.addEventListener('touchend', end);
+    if (clearSigBtn) clearSigBtn.addEventListener('click', () => {
+      const c = getSignatureCtx();
+      if (c) c.clearRect(0,0,signatureCanvas.width, signatureCanvas.height);
+    });
+  }
 
   // Dynamic rendering from schema
   renderSchema();
+  // ensure sections visible initially
+  expandAllSections();
   // Prefill with last readings if available, then set current date/time
   try {
     const last = localStorage.getItem('erlog:lastSubmit');
@@ -54,7 +64,7 @@
       setDeep(object, key, value);
     }
     // include signature as data URL
-    object.signature = signatureCanvas.toDataURL();
+    if (signatureCanvas) object.signature = signatureCanvas.toDataURL();
     return object;
   }
   function setDeep(obj, path, value) {
@@ -83,12 +93,14 @@
       if (val !== undefined) el.value = val;
     });
     // signature
-    if (data.signature) {
+    if (signatureCanvas && data.signature) {
       const img = new Image();
-      img.onload = () => ctx.drawImage(img, 0, 0);
+      const c = getSignatureCtx();
+      if (c) { img.onload = () => c.drawImage(img, 0, 0); }
       img.src = data.signature;
-    } else {
-      ctx.clearRect(0,0,signatureCanvas.width, signatureCanvas.height);
+    } else if (signatureCanvas) {
+      const c = getSignatureCtx();
+      if (c) c.clearRect(0,0,signatureCanvas.width, signatureCanvas.height);
     }
   }
   function getDeep(obj, path) {
@@ -352,6 +364,10 @@ function focusNearestTimeColumn() {
   });
 }
 
+function expandAllSections() {
+  document.querySelectorAll('.card').forEach((c) => c.classList.add('open'));
+}
+
 function renderGeneratorControl(section) {
   const card = el('section', { class: 'card' });
   card.appendChild(el('h2', {}, section.title));
@@ -423,26 +439,24 @@ function renderGeneratorControl(section) {
 
 function rerenderDynamicSections() {
   const root = document.getElementById('sections');
-  // remove and rebuild only generator-related sections and following tables
-  const idsToRebuild = new Set(['generators-summary', 'generators-readings']);
-  // clear existing for those ids
-  Array.from(root.children).forEach((node) => {
-    const header = node.querySelector('h2');
-    if (!header) return;
-    const title = header.textContent || '';
-    if (title.startsWith('Generators')) root.removeChild(node);
+  const genCard = Array.from(root.children).find(n => (n.querySelector('h2')||{}).textContent === 'Generators');
+  if (!genCard) return;
+  const body = genCard.querySelector('.card-body');
+  if (!body) return;
+  body.innerHTML = '';
+  const schema = (window.ENGINE_ROOM_SCHEMA || []).find(s => s.id === 'generators');
+  if (!schema) return;
+  (schema.children || []).forEach((child) => {
+    if (child.subtype === 'generator-control') {
+      body.appendChild(renderGeneratorControl({ id: 'gen-control', type: 'generator-control', options: child.options }));
+    } else if (child.subtype === 'fields') {
+      const s = { id: 'generators-summary', type: 'fields', title: child.title || 'Summary', columns: child.columns, groups: child.groups };
+      body.appendChild(renderFieldsSectionFilteredByGen(s));
+    } else if (child.subtype === 'table-groups') {
+      const s = { id: 'generators-readings', type: 'table-groups', title: child.title || 'Hourly Readings', columns: child.columns, groups: child.groups };
+      body.appendChild(renderTableGroups(s));
+    }
   });
-  // find insertion point (after gen-control)
-  const afterNode = Array.from(root.children).find(n => (n.querySelector('h2')||{}).textContent === 'Generators');
-  const insertIndex = afterNode ? Array.from(root.children).indexOf(afterNode) + 1 : root.children.length;
-  const frag = document.createDocumentFragment();
-  window.ENGINE_ROOM_SCHEMA.forEach((s) => {
-    if (s.id === 'generators-summary') frag.appendChild(renderFieldsSectionFilteredByGen(s));
-    if (s.id === 'generators-readings') frag.appendChild(renderTableGroups(s));
-  });
-  // insert
-  const refNode = root.children[insertIndex] || null;
-  root.insertBefore(frag, refNode);
 }
 
 function renderFieldsSectionFilteredByGen(section) {
