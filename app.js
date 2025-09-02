@@ -44,6 +44,7 @@
     }
   } catch (e) { /* ignore */ }
   setCurrentDateTime();
+  focusNearestTimeColumn();
 
   // Save/Load draft to localStorage
   function serializeForm(formEl) {
@@ -308,6 +309,47 @@ function setCurrentDateTime() {
   if (d && !d.value) d.value = `${yyyy}-${mm}-${dd}`;
   const t = document.querySelector('input[name="time"]');
   if (t) t.value = `${hh}:${mi}`;
+}
+
+function parseTimeLabel(label) {
+  // expects HH:MM
+  const [h, m] = label.split(':').map(Number);
+  return h * 60 + (m || 0);
+}
+
+function getNearestColumnIndex() {
+  const labels = (window.HOURS_COLUMNS || []).map((s) => s);
+  if (labels.length === 0) return 0;
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  let bestIdx = 0;
+  let bestDiff = Infinity;
+  labels.forEach((lab, idx) => {
+    const t = parseTimeLabel(lab.replace(/[^0-9:]/g, ''));
+    const diff = Math.abs(nowMin - t);
+    if (diff < bestDiff) { bestDiff = diff; bestIdx = idx; }
+  });
+  return bestIdx;
+}
+
+function focusNearestTimeColumn() {
+  const idx = getNearestColumnIndex();
+  document.querySelectorAll('.table-grid').forEach((grid) => {
+    // hide all input columns except header first column and the nearest time col
+    const children = Array.from(grid.children);
+    // grid structure: header row first, then repeated rows
+    const colCount = (window.HOURS_COLUMNS || []).length + 1; // +1 for label column
+    children.forEach((node, i) => {
+      const col = i % (colCount);
+      if (i < colCount) {
+        // header row: keep label and nearest time header
+        if (!(col === 0 || col === idx + 1)) node.classList.add('hidden');
+      } else {
+        // data rows: keep label and nearest time cell
+        if (!(col === 0 || col === idx + 1)) node.classList.add('hidden');
+      }
+    });
+  });
 }
 
 function renderGeneratorControl(section) {

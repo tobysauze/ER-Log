@@ -131,6 +131,7 @@ textarea { resize: vertical; min-height: 120px; }
 .table-grid .th.sticky { position: sticky; left: 0; background: var(--card-subtle); padding-left: 6px; border-radius: 8px; }
 .table-grid .row-label { color: var(--muted); font-weight: 600; padding-left: 6px; position: sticky; left: 0; background: linear-gradient(90deg, var(--card-subtle) 60%, rgba(17,24,54,0)); border-radius: 8px; }
 .table-grid input { width: 100%; }
+.hidden { display: none !important; }
 
 /* Print styling */
 @media print {
