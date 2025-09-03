@@ -11,8 +11,14 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY') ?? '';
 const MODEL = 'gpt-4o-mini';
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS'
+};
+
 function bad(msg: string, code = 400) {
-  return new Response(msg, { status: code });
+  return new Response(msg, { status: code, headers: { ...CORS_HEADERS, 'Content-Type': 'text/plain;charset=UTF-8' } });
 }
 
 function toDataUrl(file: File): Promise<string> {
@@ -85,6 +91,9 @@ async function callOpenAI(imageDataUrls: string[]): Promise<any> {
 
 Deno.serve(async (req) => {
   try {
+    if (req.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: CORS_HEADERS });
+    }
     if (req.method !== 'POST') return bad('Use POST');
     if (!OPENAI_API_KEY) return bad('OPENAI_API_KEY not set', 500);
     const form = await req.formData();
@@ -95,7 +104,7 @@ Deno.serve(async (req) => {
     if (files.length === 0) return bad('No files');
     const dataUrls = await Promise.all(files.map((f) => toDataUrl(f)));
     const result = await callOpenAI(dataUrls);
-    return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify(result), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
   } catch (e) {
     return bad(`Error: ${e.message}`, 500);
   }
