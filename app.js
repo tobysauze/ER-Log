@@ -11,7 +11,7 @@
   yearSpan.textContent = new Date().getFullYear();
 
   // Signature pad (optional)
-  if (signatureCanvas && typeof signatureCanvas.getContext === 'function') {
+  if (false && signatureCanvas && typeof signatureCanvas.getContext === 'function') {
     const ctx = signatureCanvas.getContext('2d');
     ctx.lineWidth = 2.2;
     ctx.lineCap = 'round';
@@ -37,6 +37,24 @@
 
   // Dynamic rendering from schema
   renderSchema();
+
+  // Prefill from last submitted entry (if any)
+  try {
+    const lastRaw = localStorage.getItem('erlog:lastSubmit');
+    if (lastRaw) {
+      populateForm(JSON.parse(lastRaw));
+    }
+  } catch (e) { /* noop */ }
+
+  // Auto-fill current date and time in header
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const dateInput = document.querySelector('input[name="date"]');
+  const timeInput = document.querySelector('input[name="time"]');
+  if (dateInput && !dateInput.value) dateInput.value = todayStr;
+  if (timeInput && !timeInput.value) timeInput.value = timeStr;
 
   // Save/Load draft to localStorage
   function serializeForm(formEl) {
@@ -112,9 +130,26 @@
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
+    // Ensure timestamp is captured at submit time as well
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+    const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    const dateInput = document.querySelector('input[name="date"]');
+    const timeInput = document.querySelector('input[name="time"]');
+    if (dateInput) dateInput.value = todayStr;
+    if (timeInput) timeInput.value = timeStr;
     const payload = serializeForm(form);
+    payload.__meta = { ts: Date.now(), iso: new Date().toISOString() };
     console.log('ER Log submission', payload);
     localStorage.setItem('erlog:lastSubmit', JSON.stringify(payload));
+    // Append to entries array
+    try {
+      const raw = localStorage.getItem('erlog:entries');
+      const arr = raw ? JSON.parse(raw) : [];
+      arr.push(payload);
+      localStorage.setItem('erlog:entries', JSON.stringify(arr));
+    } catch (e) { /* noop */ }
     toast('Entry submitted');
   });
 
@@ -178,7 +213,8 @@ function renderFieldsSection(section) {
     section.groups.forEach((group) => {
       const groupCard = el('div', { class: 'card subtle' });
       groupCard.appendChild(el('div', { class: 'subheading' }, group.title));
-      const grid = el('div', { class: 'grid cols-' + (section.columns || 4) });
+      // Render each group's fields as a compact list: label left, input right
+      const grid = el('div', { class: 'grid cols-1 compact-field-list' });
       (group.fields || []).forEach((f) => grid.appendChild(renderInput(f)));
       groupCard.appendChild(grid);
       wrap.appendChild(groupCard);
@@ -218,6 +254,13 @@ function renderComposite(section) {
     } else if (child.subtype === 'table-groups') {
       const s = { id: 'generators-readings', type: 'table-groups', title: child.title || 'Hourly Readings', columns: child.columns, groups: child.groups };
       body.appendChild(renderTableGroups(s));
+    } else if (child.subtype === 'gen-matrix') {
+      const s = { id: 'gen-matrix', type: 'gen-matrix', title: child.title || 'Online Generator Readings', rows: child.rows };
+      const node = renderGenMatrixSection(s);
+      // Keep references for dynamic updates
+      window.__genMatrixSection = s;
+      window.__genMatrixNode = node;
+      body.appendChild(node);
     }
   });
 
@@ -242,6 +285,10 @@ function renderTableGroups(section) {
     const gCard = el('div', { class: 'card subtle' });
     gCard.appendChild(el('div', { class: 'subheading' }, g.title));
     const table = el('div', { class: 'table-grid' });
+    // Ensure the grid has the correct number of hour columns
+    if (Array.isArray(section.columns)) {
+      table.style.setProperty('--hours', String(section.columns.length));
+    }
     // header row
     table.appendChild(el('div', { class: 'th sticky' }, 'Reading'));
     section.columns.forEach((h) => table.appendChild(el('div', { class: 'th' }, h)));
@@ -308,43 +355,58 @@ function renderGeneratorControl(section) {
   ids.forEach(id => {
     const c = el('button', { type: 'button', class: 'chip', 'data-id': String(id) }, `Gen ${id}`);
     c.addEventListener('click', () => {
-      if (c.classList.contains('active')) {
-        c.classList.remove('active');
-      } else {
+      const willActivate = !c.classList.contains('active');
+      if (willActivate) {
+        // if at limit, prefer the newly clicked chip by trimming others
+        const currentActive = Array.from(chipMap.values()).filter(btn => btn.classList.contains('active')).length;
+        const target = Number(countSelect.value);
+        if (currentActive >= target && target > 0) {
+          // deactivate oldest actives to make room, keeping order by id
+          const actives = ids.filter(i => chipMap.get(i).classList.contains('active'));
+          // remove from start until size < target
+          while (actives.length >= target) {
+            const removeId = actives.shift();
+            const btn = chipMap.get(removeId);
+            if (btn) btn.classList.remove('active');
+          }
+        }
         c.classList.add('active');
+      } else {
+        c.classList.remove('active');
       }
-      syncGenSelection();
+      syncGenSelection(id);
     });
     chipMap.set(id, c);
     chips.appendChild(c);
   });
   wrap.appendChild(chips);
 
-  function syncGenSelection() {
+  function syncGenSelection(preferredId) {
     const active = new Set();
     chipMap.forEach((btn, id) => { if (btn.classList.contains('active')) active.add(id); });
     // enforce count
     const target = Number(countSelect.value);
     if (active.size > target) {
-      // turn off extras (last toggled off)
-      const arr = Array.from(active);
-      while (arr.length > target) {
-        const id = arr.pop();
-        const btn = chipMap.get(id);
-        if (btn) btn.classList.remove('active');
+      // Trim extras while preferring the most recently clicked (preferredId)
+      const ordered = ids.filter(id => chipMap.get(id).classList.contains('active'));
+      const keep = [];
+      if (preferredId && ordered.includes(preferredId)) {
+        keep.push(preferredId);
       }
+      for (const id of ordered) {
+        if (keep.length >= target) break;
+        if (!keep.includes(id)) keep.push(id);
+      }
+      // deactivate those not in keep
+      ordered.forEach((id) => {
+        if (!keep.includes(id)) {
+          const btn = chipMap.get(id);
+          if (btn) btn.classList.remove('active');
+        }
+      });
       return syncGenSelection();
     }
-    if (active.size < target) {
-      // auto-activate earliest unchecked
-      for (const id of ids) {
-        if (active.size >= target) break;
-        if (!chipMap.get(id).classList.contains('active')) {
-          chipMap.get(id).classList.add('active');
-          active.add(id);
-        }
-      }
-    }
+    // Do not auto-activate when below target; user chooses which ones
     window.__activeGenerators = active; // global selection
     rerenderDynamicSections();
   }
@@ -360,32 +422,80 @@ function renderGeneratorControl(section) {
 
 function rerenderDynamicSections() {
   const root = document.getElementById('sections');
-  // remove and rebuild only generator-related sections and following tables
-  const idsToRebuild = new Set(['generators-summary', 'generators-readings']);
-  // clear existing for those ids
-  Array.from(root.children).forEach((node) => {
-    const header = node.querySelector('h2');
-    if (!header) return;
-    const title = header.textContent || '';
-    if (title.startsWith('Generators')) root.removeChild(node);
+  // find the Generators composite card
+  const generatorsCard = Array.from(root.children).find((n) => {
+    const header = n.querySelector(':scope > .card-header h2');
+    return header && header.textContent === 'Generators';
   });
-  // find insertion point (after gen-control)
-  const afterNode = Array.from(root.children).find(n => (n.querySelector('h2')||{}).textContent === 'Generators');
-  const insertIndex = afterNode ? Array.from(root.children).indexOf(afterNode) + 1 : root.children.length;
-  const frag = document.createDocumentFragment();
-  window.ENGINE_ROOM_SCHEMA.forEach((s) => {
-    if (s.id === 'generators-summary') frag.appendChild(renderFieldsSectionFilteredByGen(s));
-    if (s.id === 'generators-readings') frag.appendChild(renderTableGroups(s));
+  if (!generatorsCard) return;
+  const body = generatorsCard.querySelector(':scope > .card-body');
+  if (!body) return;
+
+  // remove any existing gen-matrix section inside the Generators card
+  Array.from(body.children).forEach((child) => {
+    const h2 = child.querySelector('h2');
+    if (h2 && h2.textContent === 'Online Generator Readings') {
+      body.removeChild(child);
+    }
   });
-  // insert
-  const refNode = root.children[insertIndex] || null;
-  root.insertBefore(frag, refNode);
+
+  // append fresh matrix reflecting current selection
+  if (window.__genMatrixSection) {
+    const node = renderGenMatrixSection(window.__genMatrixSection);
+    window.__genMatrixNode = node;
+    body.appendChild(node);
+  }
 }
 
 function renderFieldsSectionFilteredByGen(section) {
   const clone = JSON.parse(JSON.stringify(section));
   clone.groups = (clone.groups || []).filter(g => !g.genId || (window.__activeGenerators && window.__activeGenerators.has(g.genId)));
   return renderFieldsSection(clone);
+}
+
+function renderGenMatrixSection(section) {
+  const card = el('section', { class: 'card' });
+  const header = el('div', { class: 'card-header' });
+  header.appendChild(el('h2', {}, section.title));
+  header.addEventListener('click', () => card.classList.toggle('open'));
+  const toggleBtn = el('button', { type: 'button', class: 'btn icon', 'aria-label': 'Toggle' }, '▾');
+  toggleBtn.addEventListener('click', () => card.classList.toggle('open'));
+  header.appendChild(toggleBtn);
+  card.appendChild(header);
+  const body = el('div', { class: 'card-body' });
+  card.appendChild(body);
+
+  const activeIds = window.__activeGenerators ? Array.from(window.__activeGenerators.values()) : [];
+  if (activeIds.length === 0) {
+    body.appendChild(el('p', { style: 'color: var(--muted);' }, 'Select running generators above to enter readings.'));
+    return card;
+  }
+
+  const table = el('div', { class: 'table-grid' });
+  table.style.setProperty('--hours', String(activeIds.length));
+  // Header
+  table.appendChild(el('div', { class: 'th sticky' }, 'Reading'));
+  activeIds.forEach(id => table.appendChild(el('div', { class: 'th' }, `Gen ${id}`)));
+
+  // Rows
+  (section.rows || []).forEach((rowLabel) => {
+    table.appendChild(el('div', { class: 'row-label' }, rowLabel));
+    activeIds.forEach((id) => {
+      const key = `gen${id}.${rowLabel.replace(/[^a-z0-9]+/gi,'_').toLowerCase()}`;
+      const inp = el('input', { name: key, type: rowLabel.toLowerCase().includes('check') ? 'checkbox' : 'text' });
+      if (inp.type === 'checkbox') {
+        const wrap = el('label');
+        wrap.appendChild(inp);
+        table.appendChild(wrap);
+      } else {
+        table.appendChild(inp);
+      }
+    });
+  });
+
+  body.appendChild(table);
+  card.classList.add('open');
+  return card;
 }
 
 

@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mary-Jean II — Past Entries</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand">
+        <img src="./assets/mary-jean-ii.png" alt="Mary-Jean II Logo" onerror="this.closest('.brand').classList.add('no-image')">
+        <div class="brand-text">
+          <h1>Mary-Jean II</h1>
+          <p>Engine Room Log</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="./index.html" class="btn secondary">Home</a>
+        <a href="./running.html" class="btn secondary">ER Running Log</a>
+      </div>
+    </header>
+
+    <main class="container wide">
+      <section class="card open">
+        <div class="card-header">
+          <h2>Past Entries</h2>
+          <div class="header-actions">
+            <button id="clearAll" class="btn secondary">Clear All</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="entriesList" class="grid cols-1"></div>
+        </div>
+      </section>
+
+      <section class="card open">
+        <div class="card-header">
+          <h2>Graph Data</h2>
+        </div>
+        <div class="card-body">
+          <div class="grid cols-1" style="gap:16px;">
+            <div class="row-actions">
+              <button id="toggleGen" class="btn secondary">Generators</button>
+              <button id="toggleEng" class="btn secondary">Main Engines</button>
+              <button id="toggleOther" class="btn secondary">Other</button>
+            </div>
+
+            <div id="chooserGenWrap" class="grid cols-1 hidden" style="gap:10px;">
+              <div class="subheading">Generators</div>
+              <div class="row-actions">
+                <button id="toggleGen1" class="btn secondary">Generator 1</button>
+                <button id="toggleGen2" class="btn secondary">Generator 2</button>
+                <button id="toggleGen3" class="btn secondary">Generator 3</button>
+              </div>
+              <div id="chooserGen1Wrap" class="grid cols-1 hidden" style="gap:8px;">
+                <div id="seriesChooserGen1" class="grid cols-4"></div>
+              </div>
+              <div id="chooserGen2Wrap" class="grid cols-1 hidden" style="gap:8px;">
+                <div id="seriesChooserGen2" class="grid cols-4"></div>
+              </div>
+              <div id="chooserGen3Wrap" class="grid cols-1 hidden" style="gap:8px;">
+                <div id="seriesChooserGen3" class="grid cols-4"></div>
+              </div>
+            </div>
+            <div id="chooserEngWrap" class="grid cols-1 hidden" style="gap:10px;">
+              <div class="subheading">Main Engines</div>
+              <div class="row-actions">
+                <button id="togglePort" class="btn secondary">Port Main Engine</button>
+                <button id="toggleStbd" class="btn secondary">Starboard Main Engine</button>
+              </div>
+              <div id="chooserPortWrap" class="grid cols-1 hidden" style="gap:8px;">
+                <div id="seriesChooserPort" class="grid cols-4"></div>
+              </div>
+              <div id="chooserStbdWrap" class="grid cols-1 hidden" style="gap:8px;">
+                <div id="seriesChooserStbd" class="grid cols-4"></div>
+              </div>
+            </div>
+            <div id="chooserOtherWrap" class="grid cols-1 hidden" style="gap:10px;">
+              <div class="subheading">Other</div>
+              <div id="seriesChooserOther" class="grid cols-4"></div>
+            </div>
+            <div class="row-actions">
+              <button id="plotBtn" class="btn">Plot Selected</button>
+              <button id="clearPlotBtn" class="btn secondary">Clear Plot</button>
+            </div>
+            <canvas id="chart" height="140"></canvas>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <span>© <span id="year"></span> Mary-Jean II — Engine Room</span>
+    </footer>
+
+    <script src="./schema.js"></script>
+    <script>
+      document.getElementById('year').textContent = new Date().getFullYear();
+
+      const entriesList = document.getElementById('entriesList');
+      const clearAllBtn = document.getElementById('clearAll');
+      const seriesChooserGen1 = document.getElementById('seriesChooserGen1');
+      const seriesChooserGen2 = document.getElementById('seriesChooserGen2');
+      const seriesChooserGen3 = document.getElementById('seriesChooserGen3');
+      const seriesChooserPort = document.getElementById('seriesChooserPort');
+      const seriesChooserStbd = document.getElementById('seriesChooserStbd');
+      const seriesChooserOther = document.getElementById('seriesChooserOther');
+      const chooserGenWrap = document.getElementById('chooserGenWrap');
+      const chooserEngWrap = document.getElementById('chooserEngWrap');
+      const chooserOtherWrap = document.getElementById('chooserOtherWrap');
+      const toggleGenBtn = document.getElementById('toggleGen');
+      const toggleEngBtn = document.getElementById('toggleEng');
+      const toggleOtherBtn = document.getElementById('toggleOther');
+      const toggleGen1Btn = document.getElementById('toggleGen1');
+      const toggleGen2Btn = document.getElementById('toggleGen2');
+      const toggleGen3Btn = document.getElementById('toggleGen3');
+      const chooserGen1Wrap = document.getElementById('chooserGen1Wrap');
+      const chooserGen2Wrap = document.getElementById('chooserGen2Wrap');
+      const chooserGen3Wrap = document.getElementById('chooserGen3Wrap');
+      const togglePortBtn = document.getElementById('togglePort');
+      const toggleStbdBtn = document.getElementById('toggleStbd');
+      const chooserPortWrap = document.getElementById('chooserPortWrap');
+      const chooserStbdWrap = document.getElementById('chooserStbdWrap');
+      const plotBtn = document.getElementById('plotBtn');
+      const clearPlotBtn = document.getElementById('clearPlotBtn');
+      const chartCtx = document.getElementById('chart').getContext('2d');
+      let chart;
+
+      function getDeep(obj, path) {
+        const parts = String(path).replace(/\]/g,'').split(/\.|\[/).filter(Boolean);
+        return parts.reduce((acc,p)=>acc?acc[p]:undefined, obj);
+      }
+
+      function flatten(obj, prefix = '') {
+        const out = {};
+        Object.entries(obj || {}).forEach(([k, v]) => {
+          if (k === '__meta' || k === 'signature') return;
+          const p = prefix ? prefix + '.' + k : k;
+          if (v && typeof v === 'object' && !Array.isArray(v)) {
+            Object.assign(out, flatten(v, p));
+          } else {
+            out[p] = v;
+          }
+        });
+        return out;
+      }
+
+      function slug(s){ return String(s).replace(/[^a-z0-9]+/gi,'_').toLowerCase(); }
+
+      function buildLabelMapFromSchema() {
+        const map = new Map();
+        const S = window.ENGINE_ROOM_SCHEMA || [];
+        S.forEach(sec => {
+          if (sec.type === 'fields') {
+            if (sec.groups) {
+              sec.groups.forEach(g => (g.fields||[]).forEach(f => map.set(f.key, `${g.title} — ${f.label}`)));
+            } else {
+              (sec.fields||[]).forEach(f => map.set(f.key, f.label));
+            }
+          } else if (sec.type === 'composite') {
+            (sec.children||[]).forEach(ch => {
+              if (ch.subtype === 'gen-matrix') {
+                const rows = ch.rows || [];
+                [1,2,3].forEach(id => {
+                  rows.forEach(r => map.set(`gen${id}.${slug(r)}`, `Gen ${id} — ${r}`));
+                });
+              }
+            });
+          }
+        });
+        return map;
+      }
+
+      function collectNumericFields(entries) {
+        const labelMap = buildLabelMapFromSchema();
+        const keys = new Map();
+        entries.forEach(e => {
+          const flat = flatten(e);
+          Object.entries(flat).forEach(([k, v]) => {
+            if (k === '__meta' || typeof v === 'boolean') return;
+            const num = parseFloat(String(v).replace(/,/g,''));
+            if (!Number.isNaN(num) && Number.isFinite(num)) {
+              if (!keys.has(k)) keys.set(k, labelMap.get(k) || k);
+            }
+          });
+        });
+        return Array.from(keys.entries()).sort((a,b)=>String(a[1]).localeCompare(String(b[1])));
+      }
+
+      function renderChooser(container, options) {
+        container.innerHTML = '';
+        options.forEach(([key, label]) => {
+          const wrap = document.createElement('label');
+          wrap.style.display = 'grid';
+          wrap.style.gridTemplateColumns = 'auto 1fr';
+          wrap.style.alignItems = 'center';
+          wrap.style.gap = '8px';
+        
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.value = key;
+          const span = document.createElement('span');
+          span.textContent = label;
+          wrap.appendChild(cb);
+          wrap.appendChild(span);
+          container.appendChild(wrap);
+        });
+      }
+
+      function color(i){
+        const palette = ['#67a1ff','#3fe0e8','#ff6b6b','#43d17a','#f6c851','#c084fc','#60a5fa','#f472b6','#fb7185'];
+        return palette[i % palette.length];
+      }
+
+      function plotSelected(entries) {
+        const selected = [seriesChooserGen1, seriesChooserGen2, seriesChooserGen3, seriesChooserPort, seriesChooserStbd, seriesChooserOther]
+          .flatMap(c => Array.from(c.querySelectorAll('input[type="checkbox"]:checked')).map(cb=>cb.value));
+        const labels = entries.map(e => new Date(e.__meta?.ts || Date.now()).toLocaleString());
+        const datasets = selected.map((key, idx) => ({
+          label: key,
+          data: entries.map(e => {
+            const v = getDeep(e, key);
+            const n = parseFloat(String(v).replace(/,/g,''));
+            return Number.isFinite(n) ? n : null;
+          }),
+          borderColor: color(idx),
+          backgroundColor: color(idx) + '55',
+          spanGaps: true,
+          tension: 0.2
+        }));
+        if (chart) chart.destroy();
+        chart = new Chart(chartCtx, {
+          type: 'line',
+          data: { labels, datasets },
+          options: {
+            responsive: true,
+            scales: { y: { beginAtZero: false } },
+            plugins: { legend: { position: 'bottom' } }
+          }
+        });
+      }
+
+      function renderEntries() {
+        entriesList.innerHTML = '';
+        const raw = localStorage.getItem('erlog:entries');
+        const entries = raw ? JSON.parse(raw) : [];
+        if (entries.length === 0) {
+          const empty = document.createElement('p');
+          empty.textContent = 'No entries yet.';
+          empty.style.color = 'var(--muted)';
+          entriesList.appendChild(empty);
+          return;
+        }
+
+        const numericOptions = collectNumericFields(entries);
+        const gen1Opts = numericOptions.filter(([k]) => /^gen1\./.test(k));
+        const gen2Opts = numericOptions.filter(([k]) => /^gen2\./.test(k));
+        const gen3Opts = numericOptions.filter(([k]) => /^gen3\./.test(k));
+        const portOpts = numericOptions.filter(([k]) => /^port\./.test(k));
+        const stbdOpts = numericOptions.filter(([k]) => /^stbd\./.test(k));
+        const otherOpts = numericOptions.filter(([k]) => /^other\./.test(k));
+        renderChooser(seriesChooserGen1, gen1Opts);
+        renderChooser(seriesChooserGen2, gen2Opts);
+        renderChooser(seriesChooserGen3, gen3Opts);
+        renderChooser(seriesChooserPort, portOpts);
+        renderChooser(seriesChooserStbd, stbdOpts);
+        renderChooser(seriesChooserOther, otherOpts);
+
+        [...entries].reverse().forEach((entry, idx) => {
+          const card = document.createElement('div');
+          card.className = 'card subtle';
+          const header = document.createElement('div');
+          header.className = 'card-header';
+          const title = document.createElement('h2');
+          const dt = (entry.__meta && entry.__meta.iso) || new Date().toISOString();
+          const dateStr = new Date(dt).toLocaleString();
+          title.textContent = `Entry ${entries.length - idx} — ${dateStr}`;
+          header.appendChild(title);
+          const actions = document.createElement('div');
+          actions.className = 'header-actions';
+          const loadBtn = document.createElement('button');
+          loadBtn.className = 'btn';
+          loadBtn.textContent = 'Load into Form';
+          loadBtn.addEventListener('click', () => {
+            localStorage.setItem('erlog:lastSubmit', JSON.stringify(entry));
+            window.location.href = './running.html?load=last&ts=' + Date.now();
+          });
+          const viewBtn = document.createElement('button');
+          viewBtn.className = 'btn secondary';
+          viewBtn.textContent = 'View JSON';
+          viewBtn.addEventListener('click', () => {
+            const pre = document.createElement('pre');
+            pre.textContent = JSON.stringify(entry, null, 2);
+            pre.style.whiteSpace = 'pre-wrap';
+            const body = document.createElement('div');
+            body.className = 'card-body';
+            body.appendChild(pre);
+            card.appendChild(body);
+          });
+          actions.appendChild(loadBtn);
+          actions.appendChild(viewBtn);
+          header.appendChild(actions);
+          card.appendChild(header);
+          entriesList.appendChild(card);
+        });
+
+        plotBtn.addEventListener('click', () => plotSelected(entries));
+        clearPlotBtn.addEventListener('click', () => { if (chart) chart.destroy(); });
+
+        const toggle = (wrap) => wrap.classList.toggle('hidden');
+        toggleGenBtn.addEventListener('click', () => toggle(chooserGenWrap));
+        toggleEngBtn.addEventListener('click', () => toggle(chooserEngWrap));
+        toggleOtherBtn.addEventListener('click', () => toggle(chooserOtherWrap));
+
+        const showOnly = (wraps, target) => {
+          wraps.forEach(w => w.classList.add('hidden'));
+          target.classList.remove('hidden');
+        };
+        // Generators: only show last clicked
+        toggleGen1Btn.addEventListener('click', () => showOnly([chooserGen1Wrap, chooserGen2Wrap, chooserGen3Wrap], chooserGen1Wrap));
+        toggleGen2Btn.addEventListener('click', () => showOnly([chooserGen1Wrap, chooserGen2Wrap, chooserGen3Wrap], chooserGen2Wrap));
+        toggleGen3Btn.addEventListener('click', () => showOnly([chooserGen1Wrap, chooserGen2Wrap, chooserGen3Wrap], chooserGen3Wrap));
+        // Main Engines: only show last clicked
+        togglePortBtn.addEventListener('click', () => showOnly([chooserPortWrap, chooserStbdWrap], chooserPortWrap));
+        toggleStbdBtn.addEventListener('click', () => showOnly([chooserPortWrap, chooserStbdWrap], chooserStbdWrap));
+      }
+
+      clearAllBtn.addEventListener('click', () => {
+        if (confirm('Clear all saved entries?')) {
+          localStorage.removeItem('erlog:entries');
+          renderEntries();
+        }
+      });
+
+      renderEntries();
+    </script>
+  </body>
+  </html>
+
+

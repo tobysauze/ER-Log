@@ -9,6 +9,7 @@ const ENGINE_ROOM_SCHEMA = [
     columns: 4,
     fields: [
       { key: 'date', label: 'Date', input: 'date', required: true },
+      { key: 'time', label: 'Time', input: 'time', required: true },
       { key: 'from', label: 'From (Port)', input: 'text' },
       { key: 'to', label: 'To (Port)', input: 'text' },
       { key: 'route', label: 'Route / Notes', input: 'text', span: 2 }
@@ -20,86 +21,81 @@ const ENGINE_ROOM_SCHEMA = [
     type: 'composite',
     children: [
       { subtype: 'generator-control', options: { ids: [1,2,3] } },
-      { subtype: 'fields', title: 'Summary', columns: 3, groups: [
-        { title: 'Generator 1', genId: 1, fields: [
-          { key: 'gen1.from', label: 'From / At', input: 'text' },
-          { key: 'gen1.to', label: 'To', input: 'text' },
-          { key: 'gen1.hours', label: 'Hours', input: 'number', step: '0.1' }
-        ]},
-        { title: 'Generator 2', genId: 2, fields: [
-          { key: 'gen2.from', label: 'From / At', input: 'text' },
-          { key: 'gen2.to', label: 'To', input: 'text' },
-          { key: 'gen2.hours', label: 'Hours', input: 'number', step: '0.1' }
-        ]},
-        { title: 'Generator 3', genId: 3, fields: [
-          { key: 'gen3.from', label: 'From / At', input: 'text' },
-          { key: 'gen3.to', label: 'To', input: 'text' },
-          { key: 'gen3.hours', label: 'Hours', input: 'number', step: '0.1' }
-        ]}
-      ]},
-      { subtype: 'table-groups', title: 'Hourly Readings', columns: HOURS_COLUMNS, groups: [
-        { title: 'Generator 1', genId: 1, keyPrefix: 'gen1', rows: ['kW','Amps','Voltage','RPM','Oil Pressure (bar)','Coolant Temp (°C)'] },
-        { title: 'Generator 2', genId: 2, keyPrefix: 'gen2', rows: ['kW','Amps','Voltage','RPM','Oil Pressure (bar)','Coolant Temp (°C)'] },
-        { title: 'Generator 3', genId: 3, keyPrefix: 'gen3', rows: ['kW','Amps','Voltage','RPM','Oil Pressure (bar)','Coolant Temp (°C)'] }
-      ]}
+      { subtype: 'gen-matrix', title: 'Online Generator Readings', rows: [
+        'kW',
+        'kVAr',
+        'Amps (A)',
+        'Voltage (V)',
+        'RPM',
+        'Fuel consumption (L/min)',
+        'Load (%)',
+        'Coolant Temp (°C)',
+        'Oil Pressure (kPa)',
+        'Fuel Temp (°C)',
+        'Fuel Pressure (kPa)',
+        'Sea water Pressure (kPa)',
+        'Oil Temperature (°C)',
+        'Boost Pressure (kPa)',
+        'Inlet Air Temp (°C)',
+        'Visual in enclosure (check)',
+        'Fans Operating (check)'
+      ] }
     ]
   },
   {
     id: 'main-engines',
     title: 'Main Engines — Running Log Day',
-    type: 'table-groups',
-    columns: HOURS_COLUMNS,
+    type: 'fields',
+    columns: 2,
     groups: [
       {
         title: 'PORT main Engine',
-        keyPrefix: 'port',
-        rows: [
-          'RPM',
-          'Fuel Pressure (kPa)',
-          'Oil Temperature (°C)',
-          'S/W Pressure (kPa)',
-          'Boost Pressure (kPa)',
-          'Scavenge air (°C)',
-          'Left Exhaust (°C)',
-          'Right Exhaust (°C)',
-          'Ex O/B Surface temp (°C)',
-          'Fuel Differential (kPa)',
-          'Oil Differential (kPa)',
-          'Coolant Temp (°C)',
-          'Oil Pressure (kPa)',
-          'Trans gear Temp (°C)',
-          'Trans oil pressure (kPa)',
-          'Fuel consumption (L/h)',
-          'Load (%)',
-          'Shaft Flow (L/min)',
-          'Thrust bearing Temp (°C)',
-          'Ex Sea water press (kPa)'
+        fields: [
+          { key: 'port.rpm', label: 'RPM', input: 'number' },
+          { key: 'port.fuelPressure', label: 'Fuel Pressure (kPa)', input: 'number', step: '0.1' },
+          { key: 'port.oilTemp', label: 'Oil Temperature (°C)', input: 'number', step: '0.1' },
+          { key: 'port.swPressure', label: 'S/W Pressure (kPa)', input: 'number', step: '0.1' },
+          { key: 'port.boostPressure', label: 'Boost Pressure (kPa)', input: 'number', step: '0.1' },
+          { key: 'port.scavengeAir', label: 'Scavenge air (°C)', input: 'number', step: '0.1' },
+          { key: 'port.leftExhaust', label: 'Left Exhaust (°C)', input: 'number', step: '0.1' },
+          { key: 'port.rightExhaust', label: 'Right Exhaust (°C)', input: 'number', step: '0.1' },
+          { key: 'port.exSurface', label: 'Ex O/B Surface temp (°C)', input: 'number', step: '0.1' },
+          { key: 'port.fuelDiff', label: 'Fuel Differential (kPa)', input: 'number', step: '0.1' },
+          { key: 'port.oilDiff', label: 'Oil Differential (kPa)', input: 'number', step: '0.1' },
+          { key: 'port.coolantTemp', label: 'Coolant Temp (°C)', input: 'number', step: '0.1' },
+          { key: 'port.oilPressure', label: 'Oil Pressure (kPa)', input: 'number', step: '0.1' },
+          { key: 'port.transGearTemp', label: 'Trans gear Temp (°C)', input: 'number', step: '0.1' },
+          { key: 'port.transOilPressure', label: 'Trans oil pressure (kPa)', input: 'number', step: '0.1' },
+          { key: 'port.fuelConsumption', label: 'Fuel consumption (L/h)', input: 'number', step: '0.1' },
+          { key: 'port.loadPct', label: 'Load (%)', input: 'number', step: '0.1' },
+          { key: 'port.shaftFlow', label: 'Shaft Flow (L/min)', input: 'number', step: '0.1' },
+          { key: 'port.thrustBearingTemp', label: 'Thrust bearing Temp (°C)', input: 'number', step: '0.1' },
+          { key: 'port.exSeaWaterPress', label: 'Ex Sea water press (kPa)', input: 'number', step: '0.1' }
         ]
       },
       {
         title: 'STBD main Engine',
-        keyPrefix: 'stbd',
-        rows: [
-          'RPM',
-          'Fuel Pressure (kPa)',
-          'Oil Temperature (°C)',
-          'S/W Pressure (kPa)',
-          'Boost Pressure (kPa)',
-          'Scavenge air (°C)',
-          'Left Exhaust (°C)',
-          'Right Exhaust (°C)',
-          'Ex O/B Surface temp (°C)',
-          'Fuel Differential (kPa)',
-          'Oil Differential (kPa)',
-          'Coolant Temp (°C)',
-          'Oil Pressure (kPa)',
-          'Trans gear Temp (°C)',
-          'Trans oil pressure (kPa)',
-          'Fuel consumption (L/h)',
-          'Load (%)',
-          'Shaft Flow (L/min)',
-          'Thrust bearing Temp (°C)',
-          'Ex Sea water press (kPa)'
+        fields: [
+          { key: 'stbd.rpm', label: 'RPM', input: 'number' },
+          { key: 'stbd.fuelPressure', label: 'Fuel Pressure (kPa)', input: 'number', step: '0.1' },
+          { key: 'stbd.oilTemp', label: 'Oil Temperature (°C)', input: 'number', step: '0.1' },
+          { key: 'stbd.swPressure', label: 'S/W Pressure (kPa)', input: 'number', step: '0.1' },
+          { key: 'stbd.boostPressure', label: 'Boost Pressure (kPa)', input: 'number', step: '0.1' },
+          { key: 'stbd.scavengeAir', label: 'Scavenge air (°C)', input: 'number', step: '0.1' },
+          { key: 'stbd.leftExhaust', label: 'Left Exhaust (°C)', input: 'number', step: '0.1' },
+          { key: 'stbd.rightExhaust', label: 'Right Exhaust (°C)', input: 'number', step: '0.1' },
+          { key: 'stbd.exSurface', label: 'Ex O/B Surface temp (°C)', input: 'number', step: '0.1' },
+          { key: 'stbd.fuelDiff', label: 'Fuel Differential (kPa)', input: 'number', step: '0.1' },
+          { key: 'stbd.oilDiff', label: 'Oil Differential (kPa)', input: 'number', step: '0.1' },
+          { key: 'stbd.coolantTemp', label: 'Coolant Temp (°C)', input: 'number', step: '0.1' },
+          { key: 'stbd.oilPressure', label: 'Oil Pressure (kPa)', input: 'number', step: '0.1' },
+          { key: 'stbd.transGearTemp', label: 'Trans gear Temp (°C)', input: 'number', step: '0.1' },
+          { key: 'stbd.transOilPressure', label: 'Trans oil pressure (kPa)', input: 'number', step: '0.1' },
+          { key: 'stbd.fuelConsumption', label: 'Fuel consumption (L/h)', input: 'number', step: '0.1' },
+          { key: 'stbd.loadPct', label: 'Load (%)', input: 'number', step: '0.1' },
+          { key: 'stbd.shaftFlow', label: 'Shaft Flow (L/min)', input: 'number', step: '0.1' },
+          { key: 'stbd.thrustBearingTemp', label: 'Thrust bearing Temp (°C)', input: 'number', step: '0.1' },
+          { key: 'stbd.exSeaWaterPress', label: 'Ex Sea water press (kPa)', input: 'number', step: '0.1' }
         ]
       }
     ]

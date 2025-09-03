@@ -3,13 +3,12 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Mary-Jean II — Engine Room Logs</title>
+    <title>Mary-Jean II — Engine Room Log</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="
     
     https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
     <link rel="stylesheet" href="./styles.css">
   </head>
   <body>
@@ -18,17 +17,23 @@
         <img src="./assets/mary-jean-ii.png" alt="Mary-Jean II Logo" onerror="this.closest('.brand').classList.add('no-image')">
         <div class="brand-text">
           <h1>Mary-Jean II</h1>
-          <p>Engine Room Logs</p>
+          <p>Engine Room Log</p>
         </div>
+      </div>
+      <div class="header-actions">
+        <a href="./index.html" class="btn secondary">Home</a>
+        <a href="./running.html" class="btn secondary">ER Running Log</a>
+        <a href="./entries.html" class="btn secondary">Past Entries</a>
       </div>
     </header>
 
-    <main class="home">
+    <main class="container home">
       <div class="home-hero">
-        <h2>Choose a Log</h2>
+        <h2>Engine Room Log</h2>
         <div class="home-actions">
-          <a href="./main.html" class="btn accent">ER Main Log</a>
-          <a href="./running.html" class="btn">ER Running Log</a>
+          <a class="btn" href="./running.html">ER Running Log</a>
+          <a class="btn secondary" href="./main.html">ER Main Log</a>
+          <a class="btn secondary" href="./entries.html">Past Entries</a>
         </div>
       </div>
     </main>
@@ -36,7 +41,11 @@
     <footer class="app-footer">
       <span>© <span id="year"></span> Mary-Jean II — Engine Room</span>
     </footer>
+
+    <script>
+      document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
   </body>
-  </html>
+</html>
 
 
