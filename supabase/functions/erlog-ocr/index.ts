@@ -54,7 +54,7 @@ async function callOpenAI(imageDataUrls: string[]): Promise<any> {
       role: 'user',
       content: [
         { type: 'text', text: 'Extract readings and return the JSON.' },
-        ...imageDataUrls.map((u) => ({ type: 'input_image', image_url: u }))
+        ...imageDataUrls.map((u) => ({ type: 'image_url', image_url: { url: u } }))
       ]
     }
   ];
