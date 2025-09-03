@@ -191,7 +191,15 @@
       });
     });
   }
-  if (runOcrBtn && filesEl) runOcrBtn.addEventListener('click', () => runImageIngestion(filesEl.files));
+  if (runOcrBtn && filesEl) runOcrBtn.addEventListener('click', async () => {
+    try {
+      runOcrBtn.disabled = true;
+      toast('Processing photos...');
+      await runImageIngestion(filesEl.files);
+    } finally {
+      runOcrBtn.disabled = false;
+    }
+  });
   if (clearOcrBtn && filesEl && ocrPreview) clearOcrBtn.addEventListener('click', () => { filesEl.value=''; ocrPreview.innerHTML=''; });
 
   form.addEventListener('submit', (e) => {
@@ -640,7 +648,7 @@ async function runImageIngestion(files) {
     Array.from(files).forEach((f, i) => fd.append('file'+i, f));
     const resp = await fetch(`${window.SUPABASE_URL}/functions/v1/erlog-ocr`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}` },
+      headers: { 'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`, 'apikey': window.SUPABASE_ANON_KEY },
       body: fd
     });
     if (!resp.ok) throw new Error(await resp.text());
