@@ -96,16 +96,39 @@ Deno.serve(async (req) => {
     }
     if (req.method !== 'POST') return bad('Use POST');
     if (!OPENAI_API_KEY) return bad('OPENAI_API_KEY not set', 500);
+    
     const form = await req.formData();
     const files: File[] = [];
+    
+    // Extract files and validate
     for (const [k, v] of form.entries()) {
-      if (v instanceof File && v.size > 0) files.push(v);
+      if (v instanceof File && v.size > 0) {
+        // Check file type
+        const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
+        if (!allowedTypes.includes(v.type)) {
+          return bad(`Unsupported file type: ${v.type}. Supported types: ${allowedTypes.join(', ')}`, 400);
+        }
+        // Check file size (max 10MB)
+        if (v.size > 10 * 1024 * 1024) {
+          return bad('File too large. Maximum size: 10MB', 400);
+        }
+        files.push(v);
+      }
     }
-    if (files.length === 0) return bad('No files');
+    
+    if (files.length === 0) return bad('No valid image files found');
+    
+    console.log(`Processing ${files.length} files:`, files.map(f => ({ name: f.name, type: f.type, size: f.size })));
+    
     const dataUrls = await Promise.all(files.map((f) => toDataUrl(f)));
     const result = await callOpenAI(dataUrls);
-    return new Response(JSON.stringify(result), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+    
+    return new Response(JSON.stringify(result), { 
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } 
+    });
+    
   } catch (e) {
+    console.error('Edge function error:', e);
     return bad(`Error: ${e.message}`, 500);
   }
 });
