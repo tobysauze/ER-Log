@@ -37,6 +37,26 @@
             <p>Please enable JavaScript to render the Engine Room Log sections.</p>
           </section>
         </noscript>
+        <section class="card">
+          <div class="card-header">
+            <h2>Import from Photos (Beta)</h2>
+            <button type="button" class="btn icon" aria-label="Toggle" onclick="this.closest('section').classList.toggle('open')">▾</button>
+          </div>
+          <div class="card-body">
+            <div class="grid cols-1">
+              <label>
+                <span>Images (you can select multiple)</span>
+                <input id="ocrFiles" type="file" accept="image/*" multiple capture="environment" />
+              </label>
+              <div class="row-actions">
+                <button type="button" id="runOcrBtn" class="btn">Extract from Photos</button>
+                <button type="button" id="clearOcrBtn" class="btn secondary">Clear</button>
+              </div>
+              <div id="ocrPreview" class="grid cols-4"></div>
+              <p style="color:var(--muted);margin:0">Notes: Images are processed via a Supabase Edge Function. This is optional; the form works without it.</p>
+            </div>
+          </div>
+        </section>
         <div id="sections"></div>
 
         

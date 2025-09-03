@@ -171,6 +171,28 @@
   });
 
   printBtn.addEventListener('click', () => window.print());
+  // Wire OCR controls if present
+  const filesEl = document.getElementById('ocrFiles');
+  const runOcrBtn = document.getElementById('runOcrBtn');
+  const clearOcrBtn = document.getElementById('clearOcrBtn');
+  const ocrPreview = document.getElementById('ocrPreview');
+  if (filesEl && ocrPreview) {
+    filesEl.addEventListener('change', () => {
+      ocrPreview.innerHTML = '';
+      Array.from(filesEl.files || []).forEach(f => {
+        const img = new Image();
+        img.style.maxWidth = '200px';
+        img.style.borderRadius = '8px';
+        img.title = f.name;
+        const reader = new FileReader();
+        reader.onload = () => { img.src = reader.result; };
+        reader.readAsDataURL(f);
+        ocrPreview.appendChild(img);
+      });
+    });
+  }
+  if (runOcrBtn && filesEl) runOcrBtn.addEventListener('click', () => runImageIngestion(filesEl.files));
+  if (clearOcrBtn && filesEl && ocrPreview) clearOcrBtn.addEventListener('click', () => { filesEl.value=''; ocrPreview.innerHTML=''; });
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -608,6 +630,49 @@ function renderFieldsSectionFilteredByGen(section) {
   const clone = JSON.parse(JSON.stringify(section));
   clone.groups = (clone.groups || []).filter(g => !g.genId || (window.__activeGenerators && window.__activeGenerators.has(g.genId)));
   return renderFieldsSection(clone);
+}
+
+async function runImageIngestion(files) {
+  if (!files || files.length === 0) return toast('No images selected');
+  if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) return toast('Cloud disabled');
+  try {
+    const fd = new FormData();
+    Array.from(files).forEach((f, i) => fd.append('file'+i, f));
+    const resp = await fetch(`${window.SUPABASE_URL}/functions/v1/erlog-ocr`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}` },
+      body: fd
+    });
+    if (!resp.ok) throw new Error(await resp.text());
+    const json = await resp.json();
+    applyOcrResults(json);
+    toast('Photos processed');
+  } catch (e) {
+    console.error('OCR error', e);
+    toast('Photo import failed');
+  }
+}
+
+function applyOcrResults(result) {
+  if (!result) return;
+  if (Array.isArray(result.activeGenerators) && result.activeGenerators.length) {
+    const data = {};
+    result.activeGenerators.forEach(id => { data[`gen${id}`] = {}; });
+    autoActivateGeneratorsFromData(data);
+  }
+  if (Array.isArray(result.entries)) {
+    result.entries.forEach(({ path, value }) => {
+      const el = document.querySelector(`[name="${cssEscape(path)}"]`);
+      if (!el) return;
+      if (el.type === 'checkbox') el.checked = Boolean(value);
+      else el.value = value;
+    });
+  }
+}
+
+function cssEscape(sel){
+  if (window.CSS && CSS.escape) return CSS.escape(sel);
+  return String(sel).replace(/[^a-zA-Z0-9_\-\.]/g, s => `\\${s.charCodeAt(0).toString(16)} `);
 }
 
 function renderGenMatrixSection(section) {
