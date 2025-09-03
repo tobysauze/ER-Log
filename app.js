@@ -78,7 +78,9 @@
   try {
     const lastRaw = localStorage.getItem('erlog:lastSubmit');
     if (lastRaw) {
-      populateForm(JSON.parse(lastRaw));
+      const lastData = JSON.parse(lastRaw);
+      populateForm(lastData);
+      autoActivateGeneratorsFromData(lastData);
     }
   } catch (e) { /* noop */ }
 
@@ -158,7 +160,9 @@
   loadDraftBtn.addEventListener('click', () => {
     const raw = localStorage.getItem('erlog:draft');
     if (!raw) return toast('No draft found');
-    populateForm(JSON.parse(raw));
+    const data = JSON.parse(raw);
+    populateForm(data);
+    autoActivateGeneratorsFromData(data);
     toast('Draft loaded');
   });
 
@@ -573,6 +577,26 @@ function rerenderDynamicSections() {
     const node = renderGenMatrixSection(window.__genMatrixSection);
     window.__genMatrixNode = node;
     body.appendChild(node);
+  }
+}
+
+function autoActivateGeneratorsFromData(data) {
+  try {
+    const ids = [1,2,3].filter(id => !!(data && data[`gen${id}`]));
+    const countSelect = document.getElementById('genCount');
+    if (!countSelect) return;
+    countSelect.value = String(ids.length);
+    const chips = document.querySelectorAll('.chip[data-id]');
+    chips.forEach(c => c.classList.remove('active'));
+    ids.forEach(id => {
+      const btn = document.querySelector(`.chip[data-id="${id}"]`);
+      if (btn) btn.classList.add('active');
+    });
+    // reflect in global and rebuild sections
+    window.__activeGenerators = new Set(ids);
+    rerenderDynamicSections();
+  } catch(e) {
+    // noop
   }
 }
 
