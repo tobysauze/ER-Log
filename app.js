@@ -245,32 +245,33 @@
     toast('Entry submitted');
   });
 
-  // Toast
-  function toast(message) {
-    let el = document.getElementById('toast');
-    if (!el) {
-      el = document.createElement('div');
-      el.id = 'toast';
-      el.style.position = 'fixed';
-      el.style.left = '50%';
-      el.style.bottom = '24px';
-      el.style.transform = 'translateX(-50%)';
-      el.style.padding = '12px 16px';
-      el.style.borderRadius = '12px';
-      el.style.background = 'linear-gradient(180deg, #1a234b, #0e1430)';
-      el.style.color = 'white';
-      el.style.fontWeight = '700';
-      el.style.letterSpacing = '.02em';
-      el.style.boxShadow = '0 10px 22px rgba(0,0,0,.35)';
-      el.style.zIndex = '1000';
-      document.body.appendChild(el);
-    }
-    el.textContent = message;
-    el.style.opacity = '1';
-    clearTimeout(window.__toastTimer);
-    window.__toastTimer = setTimeout(() => { el.style.opacity = '0'; }, 1600);
-  }
 })();
+
+// Toast function - moved outside IIFE for global access
+function toast(message) {
+  let el = document.getElementById('toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'toast';
+    el.style.position = 'fixed';
+    el.style.left = '50%';
+    el.style.bottom = '24px';
+    el.style.transform = 'translateX(-50%)';
+    el.style.padding = '12px 16px';
+    el.style.borderRadius = '12px';
+    el.style.background = 'linear-gradient(180deg, #1a234b, #0e1430)';
+    el.style.color = 'white';
+    el.style.fontWeight = '700';
+    el.style.letterSpacing = '.02em';
+    el.style.boxShadow = '0 10px 22px rgba(0,0,0,.35)';
+    el.style.zIndex = '1000';
+    document.body.appendChild(el);
+  }
+  el.textContent = message;
+  el.style.opacity = '1';
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(() => { el.style.opacity = '0'; }, 1600);
+}
 
 function renderSchema() {
   const root = document.getElementById('sections');
