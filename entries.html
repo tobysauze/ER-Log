@@ -305,6 +305,7 @@
           loadBtn.className = 'btn';
           loadBtn.textContent = 'Load into Form';
           loadBtn.addEventListener('click', () => {
+            // Save to localStorage and navigate to form. The form will auto-activate gens from data
             localStorage.setItem('erlog:lastSubmit', JSON.stringify(entry));
             window.location.href = './running.html?load=last&ts=' + Date.now();
           });

@@ -130,7 +130,11 @@
     form.querySelectorAll('input[name], select[name], textarea[name]').forEach((el) => {
       const name = el.getAttribute('name');
       const val = getDeep(data, name);
-      if (val !== undefined) el.value = val;
+      if (el.type === 'checkbox') {
+        el.checked = Boolean(val);
+      } else if (val !== undefined) {
+        el.value = val;
+      }
     });
     // signature
     if (signatureCanvas && typeof signatureCanvas.getContext === 'function') {
