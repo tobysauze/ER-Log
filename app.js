@@ -79,8 +79,8 @@
     const lastRaw = localStorage.getItem('erlog:lastSubmit');
     if (lastRaw) {
       const lastData = JSON.parse(lastRaw);
-      populateForm(lastData);
       autoActivateGeneratorsFromData(lastData);
+      setTimeout(() => populateForm(lastData), 0);
     }
   } catch (e) { /* noop */ }
 
@@ -165,8 +165,8 @@
     const raw = localStorage.getItem('erlog:draft');
     if (!raw) return toast('No draft found');
     const data = JSON.parse(raw);
-    populateForm(data);
     autoActivateGeneratorsFromData(data);
+    setTimeout(() => populateForm(data), 0);
     toast('Draft loaded');
   });
 
