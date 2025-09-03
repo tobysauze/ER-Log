@@ -651,10 +651,19 @@ async function runImageIngestion(files) {
       headers: { 'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`, 'apikey': window.SUPABASE_ANON_KEY },
       body: fd
     });
-    if (!resp.ok) throw new Error(await resp.text());
-    const json = await resp.json();
-    applyOcrResults(json);
-    toast('Photos processed');
+    if (!resp.ok) {
+      const txt = await resp.text();
+      console.error('OCR http error', resp.status, txt);
+      throw new Error(txt || `HTTP ${resp.status}`);
+    }
+    const json = await resp.json().catch(async () => ({ error: await resp.text() }));
+    console.log('OCR result', json);
+    if (json && json.entries) {
+      applyOcrResults(json);
+      toast(`Photos processed: ${json.entries.length} values`);
+    } else {
+      toast('No values found in photos');
+    }
   } catch (e) {
     console.error('OCR error', e);
     toast('Photo import failed');
@@ -669,18 +678,23 @@ function applyOcrResults(result) {
     autoActivateGeneratorsFromData(data);
   }
   if (Array.isArray(result.entries)) {
+    let applied = 0;
     result.entries.forEach(({ path, value }) => {
-      const el = document.querySelector(`[name="${cssEscape(path)}"]`);
+      const el = document.querySelector(`[name="${path}"]`);
       if (!el) return;
       if (el.type === 'checkbox') el.checked = Boolean(value);
       else el.value = value;
+      highlightField(el);
+      applied++;
     });
+    if (applied === 0) console.warn('OCR: no matching inputs for returned paths', result.entries);
   }
 }
 
-function cssEscape(sel){
-  if (window.CSS && CSS.escape) return CSS.escape(sel);
-  return String(sel).replace(/[^a-zA-Z0-9_\-\.]/g, s => `\\${s.charCodeAt(0).toString(16)} `);
+function highlightField(el){
+  const prev = el.style.boxShadow;
+  el.style.boxShadow = '0 0 0 3px rgba(63,224,232,.35)';
+  setTimeout(()=>{ el.style.boxShadow = prev; }, 1200);
 }
 
 function renderGenMatrixSection(section) {
