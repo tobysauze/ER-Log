@@ -34,6 +34,7 @@
           </div>
         </div>
         <div class="card-body">
+          <p id="cloudStatus" style="margin:0 0 10px; color: var(--muted);"></p>
           <div id="entriesList" class="grid cols-1"></div>
         </div>
       </section>
@@ -98,7 +99,10 @@
       <span>© <span id="year"></span> Mary-Jean II — Engine Room</span>
     </footer>
 
-    <script src="./schema.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <script src="./sb-config.js?v=sb1"></script>
+    <script src="./cloud.js?v=sb1"></script>
+    <script src="./schema.js?v=sb1"></script>
     <script>
       document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -245,10 +249,24 @@
         });
       }
 
-      function renderEntries() {
+      async function renderEntries() {
         entriesList.innerHTML = '';
-        const raw = localStorage.getItem('erlog:entries');
-        const entries = raw ? JSON.parse(raw) : [];
+        // Prefer cloud, fallback to local
+        let entries = null;
+        let statusText = '';
+        if (window.cloud && window.cloud.enabled) {
+          entries = await window.cloud.fetchEntries();
+          statusText = `Cloud: ${entries ? 'connected' : 'error'}; `;
+        }
+        if (!entries) {
+          const raw = localStorage.getItem('erlog:entries');
+          entries = raw ? JSON.parse(raw) : [];
+          statusText += `Local entries: ${entries.length}`;
+        } else {
+          statusText += `Cloud entries: ${entries.length}`;
+        }
+        const statusEl = document.getElementById('cloudStatus');
+        if (statusEl) statusEl.textContent = statusText;
         if (entries.length === 0) {
           const empty = document.createElement('p');
           empty.textContent = 'No entries yet.';
@@ -338,6 +356,9 @@
       });
 
       renderEntries();
+      if (window.cloud && window.cloud.enabled) {
+        window.cloud.subscribeEntries(() => renderEntries());
+      }
     </script>
   </body>
   </html>

@@ -38,6 +38,42 @@
   // Dynamic rendering from schema
   renderSchema();
 
+  // Show cloud status badge (Pages/phone friendly)
+  (async function showCloudStatus(){
+    const badge = document.createElement('div');
+    badge.id = 'cloudBadge';
+    badge.style.position = 'fixed';
+    badge.style.right = '12px';
+    badge.style.bottom = '90px';
+    badge.style.zIndex = '1000';
+    badge.style.padding = '6px 10px';
+    badge.style.borderRadius = '10px';
+    badge.style.fontSize = '12px';
+    badge.style.letterSpacing = '.02em';
+    badge.style.background = '#212a55';
+    badge.style.border = '1px solid rgba(255,255,255,.12)';
+    badge.style.color = 'var(--muted)';
+    badge.textContent = 'Cloud: checking…';
+    document.body.appendChild(badge);
+    try {
+      if (!window.cloud || !window.cloud.enabled) {
+        badge.textContent = 'Cloud: disabled (local only)';
+        return;
+      }
+      const list = await window.cloud.fetchEntries();
+      if (Array.isArray(list)) {
+        badge.textContent = `Cloud: connected (${list.length})`;
+        badge.style.color = '#43d17a';
+      } else {
+        badge.textContent = 'Cloud: error (fetch)';
+        badge.style.color = '#ff6b6b';
+      }
+    } catch (e) {
+      badge.textContent = 'Cloud: error';
+      badge.style.color = '#ff6b6b';
+    }
+  })();
+
   // Prefill from last submitted entry (if any)
   try {
     const lastRaw = localStorage.getItem('erlog:lastSubmit');
@@ -150,6 +186,24 @@
       arr.push(payload);
       localStorage.setItem('erlog:entries', JSON.stringify(arr));
     } catch (e) { /* noop */ }
+
+    // Compute and show warnings against Caterpillar 3500 guidelines
+    const warnings = computeParameterWarnings(payload);
+    payload.__meta.warnings = warnings;
+    renderWarningsPanel(warnings);
+
+    // Sync to cloud (Supabase) if configured
+    if (window.cloud && window.cloud.enabled) {
+      window.cloud.saveEntry(payload).then((res) => {
+        if (res && res.ok) {
+          toast('Synced to cloud');
+        } else {
+          toast(`Cloud sync failed: ${(res && res.error) ? res.error : 'check table & RLS policies'}`);
+        }
+      }).catch((e) => {
+        toast(`Cloud sync failed: ${e && e.message ? e.message : 'network or policy'}`);
+      });
+    }
     toast('Entry submitted');
   });
 
@@ -334,6 +388,81 @@ function el(tag, attrs = {}, text) {
   Object.entries(attrs || {}).forEach(([k, v]) => node.setAttribute(k, v));
   if (text !== undefined) node.textContent = text;
   return node;
+}
+
+// Warning rules based on Caterpillar 3500 guidance
+function computeParameterWarnings(data) {
+  const out = [];
+  const n = (v) => {
+    if (v === undefined || v === null || v === '') return undefined;
+    const x = parseFloat(String(v).replace(/,/g,''));
+    return Number.isFinite(x) ? x : undefined;
+  };
+  const check = (value, label, cond, guidance) => {
+    if (value === undefined) return;
+    if (!cond(value)) out.push({ label, value, guidance });
+  };
+
+  // Helper to get deep values
+  const get = (path) => {
+    const parts = String(path).replace(/\]/g,'').split(/\.|\[/).filter(Boolean);
+    return parts.reduce((acc,p)=>acc?acc[p]:undefined, data);
+  };
+
+  // Main Engines (Port/Stbd)
+  ['port','stbd'].forEach((side) => {
+    const prefix = side.toLowerCase();
+    check(n(get(`${prefix}.oilTemp`)), `${side.toUpperCase()} Oil Temperature (°C)`, (v)=> v >= 80 && v <= 110, '80–110 °C (after oil cooler)');
+    check(n(get(`${prefix}.oilPressure`)), `${side.toUpperCase()} Oil Pressure (kPa)`, (v)=> v >= 310 && v <= 420, 'Normal 310–420 kPa; Alarm 276 kPa; Shutdown 207 kPa');
+    check(n(get(`${prefix}.oilDiff`)), `${side.toUpperCase()} Oil Filter Differential (kPa)`, (v)=> v <= 105, 'Max 105 kPa (15 psi)');
+    check(n(get(`${prefix}.fuelPressure`)), `${side.toUpperCase()} Fuel Pressure (kPa)`, (v)=> v >= 379 && v <= 620, '55–90 psi (379–620 kPa); min transfer pump 379 kPa');
+    check(n(get(`${prefix}.fuelDiff`)), `${side.toUpperCase()} Fuel Filter Differential (kPa)`, (v)=> v <= 70, 'Max 70 kPa (10 psi)');
+    check(n(get(`${prefix}.coolantTemp`)), `${side.toUpperCase()} Jacket Water Temp (°C)`, (v)=> v <= 99, 'Normal max 99 °C; Alarm 101 °C; Shutdown 107 °C');
+    check(n(get(`${prefix}.scavengeAir`)), `${side.toUpperCase()} Inlet Air Temp (°C)`, (v)=> v <= 49, 'Max 49 °C (120 °F) at air cleaner');
+    // Exhaust backpressure and CHP spread not directly captured; skip.
+  });
+
+  // Other
+  check(n(get('other.seaWaterTemp')), 'Sea water Temp (°C)', (v)=> Number.isFinite(v), 'Monitor trend');
+  check(n(get('other.dayTankTemp')), 'Day Tank temp (°C)', (v)=> Number.isFinite(v) && v <= 65, 'Max recommended 65 °C for fuel temperature');
+
+  // Generators matrix (Gen 1/2/3)
+  [1,2,3].forEach((id) => {
+    const p = `gen${id}`;
+    check(n(get(`${p}.oil_temperature`)), `Gen ${id} Oil Temperature (°C)`, (v)=> v >= 80 && v <= 110, '80–110 °C');
+    check(n(get(`${p}.oil_pressure_kpa`)), `Gen ${id} Oil Pressure (kPa)`, (v)=> v >= 310 && v <= 420, 'Normal 310–420 kPa; Alarm 276; Shutdown 207');
+    check(n(get(`${p}.fuel_pressure_kpa`)), `Gen ${id} Fuel Pressure (kPa)`, (v)=> v >= 379 && v <= 620, '55–90 psi (379–620 kPa)');
+    check(n(get(`${p}.coolant_temp_°c`)), `Gen ${id} Jacket Water Temp (°C)`, (v)=> v <= 99, 'Normal max 99 °C; Alarm 101; Shutdown 107');
+    check(n(get(`${p}.inlet_air_temp_°c`)), `Gen ${id} Inlet Air Temp (°C)`, (v)=> v <= 49, 'Max 49 °C');
+    // Boost/Backpressure mappings depend on available rows; if available, add checks here.
+  });
+
+  return out;
+}
+
+function renderWarningsPanel(warnings) {
+  // Remove existing panel
+  const existing = document.getElementById('warningsPanel');
+  if (existing) existing.remove();
+  if (!warnings || warnings.length === 0) return;
+  const root = document.getElementById('sections');
+  const card = el('section', { id: 'warningsPanel', class: 'card open' });
+  const header = el('div', { class: 'card-header' });
+  header.appendChild(el('h2', {}, 'Warnings — Out of Recommended Range'));
+  card.appendChild(header);
+  const body = el('div', { class: 'card-body' });
+  const list = document.createElement('ul');
+  list.style.margin = '0';
+  list.style.paddingLeft = '18px';
+  warnings.forEach(w => {
+    const li = document.createElement('li');
+    li.textContent = `${w.label}: ${w.value} — Recommended ${w.guidance}`;
+    li.style.color = 'var(--danger)';
+    list.appendChild(li);
+  });
+  body.appendChild(list);
+  card.appendChild(body);
+  root.prepend(card);
 }
 
 function renderGeneratorControl(section) {
