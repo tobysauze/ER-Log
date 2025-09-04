@@ -65,6 +65,14 @@ IMPORTANT: Look for ALL visible numeric values on generator control panels, incl
 - Active power (kW)
 - Reactive power (kVAr)
 - Frequency (Hz)
+- **Engine Hours (hrs)** - often displayed in rectangular boxes
+- **Fuel Temperature (°C)** - look for digital readouts
+- **Fuel Pressure (kPa)** - both gauge and digital values
+- **Oil Temperature (°C)** - both gauge and digital values  
+- **Sea Water Pressure (kPa)** - look for digital displays
+- **Battery Voltage (V)** - usually in rectangular boxes
+- **Boost Pressure (kPa)** - both gauge and digital values
+- **Inlet Air Temperature (°C)** - look for digital readouts
 
 **CRITICAL for three-phase monitoring:**
 - Capture ALL voltage readings (V1.2, V2.3, V3.1) - don't just pick one
@@ -77,6 +85,14 @@ IMPORTANT: Look for ALL visible numeric values on generator control panels, incl
 - Pay attention to units (°C, kPa, V, A, etc.) and convert to numeric values
 - For temperature gauges, look for the digital display in the center
 - For pressure gauges, look for both analog and digital readings
+
+**CRITICAL for generator panel data extraction:**
+- Look for ALL rectangular boxes and digital displays showing values
+- Common readings to find: Engine Hours (hrs), Fuel Temp (°C), Fuel Pressure (kPa), Oil Temp (°C), Sea Water Press (kPa), Battery Voltage (V), Boost Pressure (kPa), Inlet Air Temp (°C)
+- These readings are often displayed in small rectangular boxes or digital readouts
+- Don't just focus on the large circular gauges - scan the entire panel for any numeric values
+- Look for both the main gauge readings AND the smaller digital displays
+- Pay special attention to any text labels followed by numbers (e.g., "Fuel Temp 38°C")
 
 Rules:
 - Use ONLY these allowed paths when possible: ${ALLOWED_KEYS.join(', ')}
