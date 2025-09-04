@@ -34,10 +34,10 @@ const ALLOWED_KEYS = [
   // Main engines (PORT/STBD)
   'port.rpm','port.fuelPressure','port.oilTemp','port.swPressure','port.boostPressure','port.scavengeAir','port.leftExhaust','port.rightExhaust','port.exSurface','port.fuelDiff','port.oilDiff','port.coolantTemp','port.oilPressure','port.transGearTemp','port.transOilPressure','port.fuelConsumption','port.loadPct','port.shaftFlow','port.thrustBearingTemp','port.exSeaWaterPress',
   'stbd.rpm','stbd.fuelPressure','stbd.oilTemp','stbd.swPressure','stbd.boostPressure','stbd.scavengeAir','stbd.leftExhaust','stbd.rightExhaust','stbd.exSurface','stbd.fuelDiff','stbd.oilDiff','stbd.coolantTemp','stbd.oilPressure','stbd.transGearTemp','stbd.transOilPressure','stbd.fuelConsumption','stbd.loadPct','stbd.shaftFlow','stbd.thrustBearingTemp','stbd.exSeaWaterPress',
-  // Generators matrix (free-form; one-valued, not hourly)
-  'gen1.kw','gen1.kvar','gen1.amps_a','gen1.voltage_v','gen1.rpm','gen1.fuel_consumption_l_min','gen1.load_pct','gen1.coolant_temp_°c','gen1.oil_pressure_kpa','gen1.fuel_temp_°c','gen1.fuel_pressure_kpa','gen1.sea_water_pressure_kpa','gen1.oil_temperature','gen1.boost_pressure_kpa','gen1.inlet_air_temp_°c','gen1.visual_in_enclosure_check','gen1.fans_operating_check','gen1.engine_hours','gen1.battery_voltage','gen1.fuel_consumption_lt_h',
-  'gen2.kw','gen2.kvar','gen2.amps_a','gen2.voltage_v','gen2.rpm','gen2.fuel_consumption_l_min','gen2.load_pct','gen2.coolant_temp_°c','gen2.oil_pressure_kpa','gen2.fuel_temp_°c','gen2.fuel_pressure_kpa','gen2.sea_water_pressure_kpa','gen2.oil_temperature','gen2.boost_pressure_kpa','gen2.inlet_air_temp_°c','gen2.visual_in_enclosure_check','gen2.fans_operating_check','gen2.engine_hours','gen2.battery_voltage','gen2.fuel_consumption_lt_h',
-  'gen3.kw','gen3.kvar','gen3.amps_a','gen3.voltage_v','gen3.rpm','gen3.fuel_consumption_l_min','gen3.load_pct','gen3.coolant_temp_°c','gen3.oil_pressure_kpa','gen3.fuel_temp_°c','gen3.fuel_pressure_kpa','gen3.sea_water_pressure_kpa','gen3.oil_temperature','gen3.boost_pressure_kpa','gen3.inlet_air_temp_°c','gen3.visual_in_enclosure_check','gen3.fans_operating_check','gen3.engine_hours','gen3.battery_voltage','gen3.fuel_consumption_lt_h',
+  // Generators matrix - updated for three-phase readings
+  'gen1.kw','gen1.kvar','gen1.hz','gen1.amps_a1','gen1.amps_a2','gen1.amps_a3','gen1.voltage_v1_2','gen1.voltage_v2_3','gen1.voltage_v3_1','gen1.rpm','gen1.fuel_consumption_l_min','gen1.load_pct','gen1.coolant_temp_°c','gen1.oil_pressure_kpa','gen1.fuel_temp_°c','gen1.fuel_pressure_kpa','gen1.sea_water_pressure_kpa','gen1.oil_temperature','gen1.boost_pressure_kpa','gen1.inlet_air_temp_°c','gen1.engine_hours','gen1.battery_voltage','gen1.visual_in_enclosure_check','gen1.fans_operating_check',
+  'gen2.kw','gen2.kvar','gen2.hz','gen2.amps_a1','gen2.amps_a2','gen2.amps_a3','gen2.voltage_v1_2','gen2.voltage_v2_3','gen2.voltage_v3_1','gen2.rpm','gen2.fuel_consumption_l_min','gen2.load_pct','gen2.coolant_temp_°c','gen2.oil_pressure_kpa','gen2.fuel_temp_°c','gen2.fuel_pressure_kpa','gen2.sea_water_pressure_kpa','gen2.oil_temperature','gen2.boost_pressure_kpa','gen2.inlet_air_temp_°c','gen2.engine_hours','gen2.battery_voltage','gen2.visual_in_enclosure_check','gen2.fans_operating_check',
+  'gen3.kw','gen3.kvar','gen3.hz','gen3.amps_a1','gen3.amps_a2','gen3.amps_a3','gen3.voltage_v1_2','gen3.voltage_v2_3','gen3.voltage_v3_1','gen3.rpm','gen3.fuel_consumption_l_min','gen3.load_pct','gen3.coolant_temp_°c','gen3.oil_pressure_kpa','gen3.fuel_temp_°c','gen3.fuel_pressure_kpa','gen3.sea_water_pressure_kpa','gen3.oil_temperature','gen3.boost_pressure_kpa','gen3.inlet_air_temp_°c','gen3.engine_hours','gen3.battery_voltage','gen3.visual_in_enclosure_check','gen3.fans_operating_check',
   // Other
   'other.seaWaterTemp','other.dayTankTemp'
 ];
@@ -59,12 +59,17 @@ IMPORTANT: Look for ALL visible numeric values on generator control panels, incl
 - Battery voltage (V)
 - Boost pressure (kPa)
 - Inlet air temperature (°C)
-- Voltage readings (V1.2, V2.3, V3.1)
-- Current readings (A1, A2, A3)
+- **Three-phase voltage readings: V1.2, V2.3, V3.1 (capture ALL three)**
+- **Three-phase current readings: A1, A2, A3 (capture ALL three)**
 - Power factor (PF1, PF2, PF3)
 - Active power (kW)
 - Reactive power (kVAr)
 - Frequency (Hz)
+
+**CRITICAL for three-phase monitoring:**
+- Capture ALL voltage readings (V1.2, V2.3, V3.1) - don't just pick one
+- Capture ALL current readings (A1, A2, A3) - don't just pick one
+- These are essential for detecting phase imbalances
 
 Rules:
 - Use ONLY these allowed paths when possible: ${ALLOWED_KEYS.join(', ')}

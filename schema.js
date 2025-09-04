@@ -24,8 +24,13 @@ const ENGINE_ROOM_SCHEMA = [
       { subtype: 'gen-matrix', title: 'Online Generator Readings', rows: [
         'kW',
         'kVAr',
-        'Amps (A)',
-        'Voltage (V)',
+        'Hz',
+        'Amps A1 (A)',
+        'Amps A2 (A)', 
+        'Amps A3 (A)',
+        'Voltage V1.2 (V)',
+        'Voltage V2.3 (V)',
+        'Voltage V3.1 (V)',
         'RPM',
         'Fuel consumption (L/min)',
         'Load (%)',
@@ -37,6 +42,8 @@ const ENGINE_ROOM_SCHEMA = [
         'Oil Temperature (°C)',
         'Boost Pressure (kPa)',
         'Inlet Air Temp (°C)',
+        'Engine Hours (hrs)',
+        'Battery Voltage (V)',
         'Visual in enclosure (check)',
         'Fans Operating (check)'
       ] }

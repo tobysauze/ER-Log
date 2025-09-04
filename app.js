@@ -726,7 +726,21 @@ function renderGenMatrixSection(section) {
   (section.rows || []).forEach((rowLabel) => {
     table.appendChild(el('div', { class: 'row-label' }, rowLabel));
     activeIds.forEach((id) => {
-      const key = `gen${id}.${rowLabel.replace(/[^a-z0-9]+/gi,'_').toLowerCase()}`;
+      // Map the display labels to the correct field names
+      let fieldName = rowLabel.toLowerCase().replace(/[^a-z0-9]+/gi,'_');
+      
+      // Handle special cases for the new three-phase fields
+      if (rowLabel === 'Amps A1 (A)') fieldName = 'amps_a1';
+      else if (rowLabel === 'Amps A2 (A)') fieldName = 'amps_a2';
+      else if (rowLabel === 'Amps A3 (A)') fieldName = 'amps_a3';
+      else if (rowLabel === 'Voltage V1.2 (V)') fieldName = 'voltage_v1_2';
+      else if (rowLabel === 'Voltage V2.3 (V)') fieldName = 'voltage_v2_3';
+      else if (rowLabel === 'Voltage V3.1 (V)') fieldName = 'voltage_v3_1';
+      else if (rowLabel === 'Hz') fieldName = 'hz';
+      else if (rowLabel === 'Engine Hours (hrs)') fieldName = 'engine_hours';
+      else if (rowLabel === 'Battery Voltage (V)') fieldName = 'battery_voltage';
+      
+      const key = `gen${id}.${fieldName}`;
       const inp = el('input', { name: key, type: rowLabel.toLowerCase().includes('check') ? 'checkbox' : 'text' });
       if (inp.type === 'checkbox') {
         const wrap = el('label');
