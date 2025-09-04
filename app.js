@@ -194,8 +194,14 @@
   if (runOcrBtn && filesEl) runOcrBtn.addEventListener('click', async () => {
     try {
       runOcrBtn.disabled = true;
-      toast('Processing photos...');
+      const processingToast = toast('Processing photos...');
       await runImageIngestion(filesEl.files);
+      // Keep processing toast visible until data is applied
+      setTimeout(() => {
+        if (processingToast && processingToast.style) {
+          processingToast.style.opacity = '0';
+        }
+      }, 2000); // Show for 2 seconds after completion
     } finally {
       runOcrBtn.disabled = false;
     }

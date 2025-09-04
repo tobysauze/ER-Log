@@ -47,34 +47,44 @@ Output strict JSON: { "activeGenerators": number[], "entries": [{"path": string,
 
 **CRITICAL INSTRUCTION: TAKE YOUR TIME AND BE EXTREMELY THOROUGH. This is a generator control panel with many critical readings. Examine every single detail methodically.**
 
-IMPORTANT: Look for ALL visible numeric values on generator control panels, including:
-- Engine speed (RPM)
-- Load percentage (%)
-- Fuel consumption (Lt/h)
-- Coolant temperature (°C)
-- Oil pressure (kPa)
-- Engine hours (hrs)
-- Fuel temperature (°C)
-- Fuel pressure (kPa)
-- Oil temperature (°C)
-- Sea water pressure (kPa)
-- Battery voltage (V)
-- Boost pressure (kPa)
-- Inlet air temperature (°C)
+**ANALYSIS STRATEGY:**
+1. Start with the large circular gauges (RPM, Coolant Temp, Oil Pressure)
+2. Look at all bar graphs (Load %, Fuel consumption)
+3. Examine every rectangular box and digital display
+4. Scan for any text labels followed by numbers
+5. Look for both analog and digital readings
+6. Check corners, edges, and small displays
+7. Read every single number you can see
+
+**MUST FIND THESE READINGS:**
+- Engine speed (RPM) - usually large circular gauge
+- Load percentage (%) - often bar graph
+- Fuel consumption (Lt/h) - often bar graph
+- Coolant temperature (°C) - circular gauge + digital display
+- Oil pressure (kPa) - circular gauge + digital display
+- Engine hours (hrs) - rectangular box display
+- Fuel temperature (°C) - rectangular box display
+- Fuel pressure (kPa) - rectangular box display
+- Oil temperature (°C) - rectangular box display
+- Sea water pressure (kPa) - rectangular box display
+- Battery voltage (V) - rectangular box display
+- Boost pressure (kPa) - rectangular box display
+- Inlet air temperature (°C) - rectangular box display
 - **Three-phase voltage readings: V1.2, V2.3, V3.1 (capture ALL three)**
 - **Three-phase current readings: A1, A2, A3 (capture ALL three)**
 - Power factor (PF1, PF2, PF3)
 - Active power (kW)
 - Reactive power (kVAr)
 - Frequency (Hz)
-- **Engine Hours (hrs)** - often displayed in rectangular boxes
-- **Fuel Temperature (°C)** - look for digital readouts
-- **Fuel Pressure (kPa)** - both gauge and digital values
-- **Oil Temperature (°C)** - both gauge and digital values  
-- **Sea Water Pressure (kPa)** - look for digital displays
-- **Battery Voltage (V)** - usually in rectangular boxes
-- **Boost Pressure (kPa)** - both gauge and digital values
-- **Inlet Air Temperature (°C)** - look for digital readouts
+
+**LOOK EVERYWHERE:**
+- Main gauges (circular)
+- Bar graphs (vertical/horizontal)
+- Digital displays (rectangular boxes)
+- Small text labels with numbers
+- Corner displays
+- Status indicators
+- Any numeric value visible
 
 **CRITICAL for three-phase monitoring:**
 - Capture ALL voltage readings (V1.2, V2.3, V3.1) - don't just pick one
@@ -150,7 +160,7 @@ async function callOpenAI(imageDataUrls: string[]): Promise<any> {
     const activeGenerators = Array.isArray(json.activeGenerators) ? json.activeGenerators.filter((n: any) => [1,2,3].includes(n)) : [];
     
     // If we got very few entries, try a second pass with more specific instructions
-    if (entries.length < 5 && imageDataUrls.length > 0) {
+    if (entries.length < 8 && imageDataUrls.length > 0) {
       console.log('First pass yielded few entries, attempting second pass...');
       
       const secondPassMessages = [
@@ -158,7 +168,7 @@ async function callOpenAI(imageDataUrls: string[]): Promise<any> {
         {
           role: 'user',
           content: [
-            { type: 'text', text: 'SECOND PASS - BE EXTREMELY THOROUGH: The first analysis missed many readings. Look at this image again with maximum attention. Examine every single number, every display, every gauge, every box. Look for: Engine Hours, Fuel Temp, Fuel Pressure, Oil Temp, Sea Water Press, Battery Voltage, Boost Pressure, Inlet Air Temp, RPM, Load %, Fuel consumption, Coolant Temp, Oil Pressure. Extract EVERYTHING you can see.' },
+            { type: 'text', text: 'SECOND PASS - EMERGENCY RECOVERY: The first analysis was incomplete. This is your last chance to extract ALL data. Look at this image with MAXIMUM intensity. Examine EVERY pixel, EVERY corner, EVERY display. Look for: Engine Hours (hrs), Fuel Temp (°C), Fuel Pressure (kPa), Oil Temp (°C), Sea Water Press (kPa), Battery Voltage (V), Boost Pressure (kPa), Inlet Air Temp (°C), RPM, Load (%), Fuel consumption (Lt/h), Coolant Temp (°C), Oil Pressure (kPa), Voltage readings (V1.2, V2.3, V3.1), Current readings (A1, A2, A3), Power (kW, kVAr), Frequency (Hz). Extract EVERY SINGLE NUMBER you can see. Be exhaustive.' },
             ...imageDataUrls.map((u) => ({ type: 'image_url', image_url: { url: u } }))
           ]
         }
@@ -197,6 +207,59 @@ async function callOpenAI(imageDataUrls: string[]): Promise<any> {
           
           entries = combinedEntries;
           console.log(`Second pass added ${secondEntries.length} entries, total: ${entries.length}`);
+          
+          // If still missing data, try a third pass with different approach
+          if (entries.length < 12 && imageDataUrls.length > 0) {
+            console.log('Still missing data, attempting third pass...');
+            
+            const thirdPassMessages = [
+              { role: 'system', content: SYSTEM_PROMPT },
+              {
+                role: 'user',
+                content: [
+                  { type: 'text', text: 'THIRD PASS - FINAL ATTEMPT: Use a completely different approach. Instead of looking for specific readings, scan the image systematically: top to bottom, left to right. Look for ANY number, ANY display, ANY gauge, ANY text with numbers. Focus on: 1) Large circular gauges, 2) Bar graphs, 3) Rectangular digital displays, 4) Small text labels, 5) Corner displays, 6) Status indicators. Extract EVERY numeric value visible, regardless of what it represents. Be methodical and thorough.' },
+                  ...imageDataUrls.map((u) => ({ type: 'image_url', image_url: { url: u } }))
+                ]
+              }
+            ];
+            
+            const thirdResp = await fetch('https://api.openai.com/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${OPENAI_API_KEY}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ 
+                model: MODEL, 
+                messages: thirdPassMessages, 
+                temperature: 0,
+                max_tokens: 2000
+              })
+            });
+            
+            if (thirdResp.ok) {
+              const thirdData = await thirdResp.json();
+              const thirdText = thirdData.choices?.[0]?.message?.content ?? '';
+              try {
+                const thirdJsonStart = thirdText.indexOf('{');
+                const thirdJsonEnd = thirdText.lastIndexOf('}');
+                const thirdJson = JSON.parse(thirdText.slice(thirdJsonStart, thirdJsonEnd + 1));
+                const thirdEntries = Array.isArray(thirdJson.entries) ? thirdJson.entries.filter((e: any) => ALLOWED_KEYS.includes(e.path)) : [];
+                
+                // Combine entries, avoiding duplicates
+                thirdEntries.forEach(entry => {
+                  if (!combinedEntries.some(e => e.path === entry.path)) {
+                    combinedEntries.push(entry);
+                  }
+                });
+                
+                entries = combinedEntries;
+                console.log(`Third pass added ${thirdEntries.length} entries, total: ${entries.length}`);
+              } catch (e) {
+                console.log('Third pass parsing failed:', e);
+              }
+            }
+          }
         } catch (e) {
           console.log('Second pass parsing failed:', e);
         }
