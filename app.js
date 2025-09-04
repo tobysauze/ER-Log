@@ -177,8 +177,11 @@
   if (exportCurrentBtn) {
     exportCurrentBtn.addEventListener('click', () => {
       const formData = serializeForm(form);
-      exportToExcel(formData, 'er-log-current');
-      toast('Current form data exported to Excel');
+      if (exportEntryWithData(formData, 'er-log-current')) {
+        toast('Current form data exported to Excel with values filled in');
+      } else {
+        toast('Export failed');
+      }
     });
   }
 
@@ -288,22 +291,82 @@
     // Row 50: Empty
     wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
     
-    // Online Generator parameters (rows 51-53)
-    const genParams = [
-      ['Genset Electrical', 'DG1/DG2/DG3', '#'],
-      ['', 'kW', 'kW'],
-      ['', 'kVAr', 'kVAr']
-    ];
+          // Online Generator parameters (rows 51-67) - expanded to match reference
+      const genParams = [
+        ['Genset Electrical', 'DG1/DG2/DG3', '#'],
+        ['', 'kW', 'kW'],
+        ['', 'kVAr', 'kVAr'],
+        ['', 'Hz', 'Hz'],
+        ['', 'Amps', 'A'],
+        ['', 'Voltage', 'V'],
+        ['', 'RPM', 'RPM'],
+        ['', 'Fuel consumption', 'l/min']
+      ];
+      
+      // Genset Mechanical section (rows 68-85)
+      const genMechParams = [
+        ['Genset Mechanical', 'Load', '%'],
+        ['', 'Coolants Temp', 'C'],
+        ['', 'oil pressure', 'kPa'],
+        ['', 'Fuel Temp', 'C'],
+        ['', 'Fuel Pressure', 'kPa'],
+        ['', 'Sea water Pressure', 'kPa'],
+        ['', 'Oil Temperature', 'C'],
+        ['', 'Boost Pressure', 'kPa'],
+        ['', 'Inlet Air Temp', 'C']
+      ];
+      
+      // Local section (rows 86-87)
+      const localParams = [
+        ['Local', 'Visual in enclosure', 'ü'],
+        ['', 'Fans Operating', 'ü']
+      ];
+      
+      // Other section (rows 88-89)
+      const otherParams = [
+        ['Local', 'Sea water Temp', 'C'],
+        ['', 'Day Tank temp', 'C']
+      ];
     
-    // Add Generator parameters
-    genParams.forEach((row, index) => {
-      const wsRow = [row[0], row[1], row[2]];
-      // Add empty columns D-K
-      for (let i = 0; i < 8; i++) {
-        wsRow.push('');
-      }
-      wsData.push(wsRow);
-    });
+          // Add Generator parameters
+      genParams.forEach((row, index) => {
+        const wsRow = [row[0], row[1], row[2]];
+        // Add empty columns D-K
+        for (let i = 0; i < 8; i++) {
+          wsRow.push('');
+        }
+        wsData.push(wsRow);
+      });
+      
+      // Add Genset Mechanical parameters
+      genMechParams.forEach((row, index) => {
+        const wsRow = [row[0], row[1], row[2]];
+        // Add empty columns D-K
+        for (let i = 0; i < 8; i++) {
+          wsRow.push('');
+        }
+        wsData.push(wsRow);
+      });
+      
+      // Add Local parameters
+      localParams.forEach((row, index) => {
+        const wsRow = [row[0], row[1], row[2]];
+        // Add empty columns D-K
+        for (let i = 0; i < 8; i++) {
+          wsRow.push('');
+        }
+        wsData.push(wsRow);
+      });
+      
+      // Add Other parameters
+      otherParams.forEach((row, index) => {
+        const wsRow = [row[0], row[1], row[2]];
+        // Add empty columns D-K
+        for (let i = 0; i < 8; i++) {
+          wsRow.push('');
+        }
+        wsData.push(wsRow);
+      });
     
     // Create worksheet
     const ws = XLSX.utils.aoa_to_sheet(wsData);
@@ -329,6 +392,224 @@
     // Save file
     XLSX.writeFile(wb, `${filename}-${new Date().toISOString().split('T')[0]}.xlsx`);
   }
+
+  // Export individual entry with data filled in
+  function exportEntryWithData(entry, filename = 'er-log-entry') {
+    try {
+      // Create workbook and worksheet
+      const wb = XLSX.utils.book_new();
+      
+      // Create worksheet with exact layout from reference and data filled in
+      const wsData = [];
+      
+      // Row 1: Header with Day, Date, Notes
+      wsData.push(['', '', '', 'Day 1', '', '', '', entry.date || '6-Feb-25', '', '', entry.route || 'Notes']);
+      
+      // Row 2: Empty
+      wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
+      
+      // Row 3: PORT main Engine header
+      wsData.push(['', 'PORT main Engine', '', '', '', '', '', '', '', '', '']);
+      
+      // Row 4: Empty
+      wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
+      
+      // PORT main Engine parameters (rows 5-24) with data
+      const portParams = [
+        ['Engines Advanced (AMS)', 'RPM', 'RPM', entry['port.rpm'] || ''],
+        ['', 'Fuel Pressure', 'kPa', entry['port.fuelPressure'] || ''],
+        ['', 'Oil Temperature', 'C', entry['port.oilTemp'] || ''],
+        ['', 'S W Pressure', 'kPa', entry['port.swPressure'] || ''],
+        ['', 'Boost Pressure', 'kPa', entry['port.boostPressure'] || ''],
+        ['', 'Scavange air', 'C', entry['port.scavengeAir'] || ''],
+        ['', 'Left Exhaust', 'C', entry['port.leftExhaust'] || ''],
+        ['', 'Right Exhaust', 'C', entry['port.rightExhaust'] || ''],
+        ['', 'Ex O/B Surface temp', 'C', entry['port.exSurface'] || ''],
+        ['', 'Fuel Differential', 'kPa', entry['port.fuelDiff'] || ''],
+        ['', 'Oil Differential', 'kPa', entry['port.oilDiff'] || ''],
+        ['', 'Coolant Temp', 'C', entry['port.coolantTemp'] || ''],
+        ['', 'Oil Pressure', 'kPa', entry['port.oilPressure'] || ''],
+        ['', 'Trans gear Temp', 'C', entry['port.transGearTemp'] || ''],
+        ['', 'Trans oil pressure', 'kPa', entry['port.transOilPressure'] || ''],
+        ['', 'Fuel consumption', 'l/h', entry['port.fuelConsumption'] || ''],
+        ['', 'Load', '%', entry['port.loadPct'] || ''],
+        ['', 'Shaft Flow', 'l/min', entry['port.shaftFlow'] || ''],
+        ['', 'Thrust bearing Temp', 'C', entry['port.thrustBearingTemp'] || ''],
+        ['', 'Ex Sea water Press', 'kPa', entry['port.exSeaWaterPress'] || '']
+      ];
+      
+      // Add PORT parameters with data
+      portParams.forEach((row, index) => {
+        const wsRow = [row[0], row[1], row[2], row[3]];
+        // Add remaining empty columns E-K
+        for (let i = 0; i < 7; i++) {
+          wsRow.push('');
+        }
+        wsData.push(wsRow);
+      });
+      
+      // Row 25: Empty
+      wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
+      
+      // Row 26: STBD main Engine header
+      wsData.push(['', 'STBD main Engine', '', '', '', '', '', '', '', '', '']);
+      
+      // Row 27: Empty
+      wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
+      
+      // STBD main Engine parameters (rows 28-47) with data
+      const stbdParams = [
+        ['Engines Advanced (AMS)', 'RPM', 'RPM', entry['stbd.rpm'] || ''],
+        ['', 'Fuel Pressure', 'kPa', entry['stbd.fuelPressure'] || ''],
+        ['', 'Oil Temperature', 'C', entry['stbd.oilTemp'] || ''],
+        ['', 'S W Pressure', 'kPa', entry['stbd.swPressure'] || ''],
+        ['', 'Boost Pressure', 'kPa', entry['stbd.boostPressure'] || ''],
+        ['', 'Scavange air', 'C', entry['stbd.scavengeAir'] || ''],
+        ['', 'Left Exhaust', 'C', entry['stbd.leftExhaust'] || ''],
+        ['', 'Right Exhaust', 'C', entry['stbd.rightExhaust'] || ''],
+        ['', 'Ex O/B Surface temp', 'C', entry['stbd.exSurface'] || ''],
+        ['', 'Fuel Differential', 'kPa', entry['stbd.fuelDiff'] || ''],
+        ['', 'Oil Differential', 'kPa', entry['stbd.oilDiff'] || ''],
+        ['', 'Coolant Temp', 'C', entry['stbd.coolantTemp'] || ''],
+        ['', 'Oil Pressure', 'kPa', entry['stbd.oilPressure'] || ''],
+        ['', 'Trans gear Temp', 'C', entry['stbd.transGearTemp'] || ''],
+        ['', 'Trans oil pressure', 'kPa', entry['stbd.transOilPressure'] || ''],
+        ['', 'Fuel consumption', 'l/h', entry['stbd.fuelConsumption'] || ''],
+        ['', 'Load', '%', entry['stbd.loadPct'] || ''],
+        ['', 'Shaft Flow', 'l/min', entry['stbd.shaftFlow'] || ''],
+        ['', 'Thrust bearing Temp', 'C', entry['stbd.thrustBearingTemp'] || ''],
+        ['', 'Ex Sea water Press', 'kPa', entry['stbd.exSeaWaterPress'] || '']
+      ];
+      
+      // Add STBD parameters with data
+      stbdParams.forEach((row, index) => {
+        const wsRow = [row[0], row[1], row[2], row[3]];
+        // Add remaining empty columns E-K
+        for (let i = 0; i < 7; i++) {
+          wsRow.push('');
+        }
+        wsData.push(wsRow);
+      });
+      
+      // Row 48: Empty
+      wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
+      
+      // Row 49: Online Generator header
+      wsData.push(['', 'Online Generator', '', '', '', '', '', '', '', '', '']);
+      
+      // Row 50: Empty
+      wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
+      
+      // Online Generator parameters (rows 51-67) with data
+      const genParams = [
+        ['Genset Electrical', 'DG1/DG2/DG3', '#', entry['gen1.running'] || entry['gen2.running'] || entry['gen3.running'] || ''],
+        ['', 'kW', 'kW', entry['gen1.kw'] || entry['gen2.kw'] || entry['gen3.kw'] || ''],
+        ['', 'kVAr', 'kVAr', entry['gen1.kvar'] || entry['gen2.kvar'] || entry['gen3.kvar'] || ''],
+        ['', 'Hz', 'Hz', entry['gen1.hz'] || entry['gen2.hz'] || entry['gen3.hz'] || ''],
+        ['', 'Amps', 'A', entry['gen1.amps_a1'] || entry['gen2.amps_a1'] || entry['gen3.amps_a1'] || ''],
+        ['', 'Voltage', 'V', entry['gen1.voltage_v1_2'] || entry['gen2.voltage_v1_2'] || entry['gen3.voltage_v1_2'] || ''],
+        ['', 'RPM', 'RPM', entry['gen1.rpm'] || entry['gen2.rpm'] || entry['gen3.rpm'] || ''],
+        ['', 'Fuel consumption', 'l/min', entry['gen1.fuel_consumption_l_min'] || entry['gen2.fuel_consumption_l_min'] || entry['gen3.fuel_consumption_l_min'] || '']
+      ];
+      
+      // Genset Mechanical section (rows 68-85) with data
+      const genMechParams = [
+        ['Genset Mechanical', 'Load', '%', entry['gen1.load_pct'] || entry['gen2.load_pct'] || entry['gen3.load_pct'] || ''],
+        ['', 'Coolants Temp', 'C', entry['gen1.coolant_temp_°c'] || entry['gen2.coolant_temp_°c'] || entry['gen3.coolant_temp_°c'] || ''],
+        ['', 'oil pressure', 'kPa', entry['gen1.oil_pressure_kpa'] || entry['gen2.oil_pressure_kpa'] || entry['gen3.oil_pressure_kpa'] || ''],
+        ['', 'Fuel Temp', 'C', entry['gen1.fuel_temp_°c'] || entry['gen2.fuel_temp_°c'] || entry['gen3.fuel_temp_°c'] || ''],
+        ['', 'Fuel Pressure', 'kPa', entry['gen1.fuel_pressure_kpa'] || entry['gen2.fuel_pressure_kpa'] || entry['gen3.fuel_pressure_kpa'] || ''],
+        ['', 'Sea water Pressure', 'kPa', entry['gen1.sea_water_pressure_kpa'] || entry['gen2.sea_water_pressure_kpa'] || entry['gen3.sea_water_pressure_kpa'] || ''],
+        ['', 'Oil Temperature', 'C', entry['gen1.oil_temperature'] || entry['gen2.oil_temperature'] || entry['gen3.oil_temperature'] || ''],
+        ['', 'Boost Pressure', 'kPa', entry['gen1.boost_pressure_kpa'] || entry['gen2.boost_pressure_kpa'] || entry['gen3.boost_pressure_kpa'] || ''],
+        ['', 'Inlet Air Temp', 'C', entry['gen1.inlet_air_temp_°c'] || entry['gen2.inlet_air_temp_°c'] || entry['gen3.inlet_air_temp_°c'] || '']
+      ];
+      
+      // Local section (rows 86-87) with data
+      const localParams = [
+        ['Local', 'Visual in enclosure', 'ü', entry['gen1.visual_in_enclosure'] || entry['gen2.visual_in_enclosure'] || entry['gen3.visual_in_enclosure'] || ''],
+        ['', 'Fans Operating', 'ü', entry['gen1.fans_operating'] || entry['gen2.fans_operating'] || entry['gen3.fans_operating'] || '']
+      ];
+      
+      // Other section (rows 88-89) with data
+      const otherParams = [
+        ['Local', 'Sea water Temp', 'C', entry['other.seaWaterTemp'] || ''],
+        ['', 'Day Tank temp', 'C', entry['other.dayTankTemp'] || '']
+      ];
+      
+      // Add Generator parameters with data
+      genParams.forEach((row, index) => {
+        const wsRow = [row[0], row[1], row[2], row[3]];
+        // Add remaining empty columns E-K
+        for (let i = 0; i < 7; i++) {
+          wsRow.push('');
+        }
+        wsData.push(wsRow);
+      });
+      
+      // Add Genset Mechanical parameters with data
+      genMechParams.forEach((row, index) => {
+        const wsRow = [row[0], row[1], row[2], row[3]];
+        // Add remaining empty columns E-K
+        for (let i = 0; i < 7; i++) {
+          wsRow.push('');
+        }
+        wsData.push(wsRow);
+      });
+      
+      // Add Local parameters with data
+      localParams.forEach((row, index) => {
+        const wsRow = [row[0], row[1], row[2], row[3]];
+        // Add remaining empty columns E-K
+        for (let i = 0; i < 7; i++) {
+          wsRow.push('');
+        }
+        wsData.push(wsRow);
+      });
+      
+      // Add Other parameters with data
+      otherParams.forEach((row, index) => {
+        const wsRow = [row[0], row[1], row[2], row[3]];
+        // Add remaining empty columns E-K
+        for (let i = 0; i < 7; i++) {
+          wsRow.push('');
+        }
+        wsData.push(wsRow);
+      });
+      
+      // Create worksheet
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+      
+      // Add to workbook
+      XLSX.utils.book_append_sheet(wb, ws, 'ER Log Entry');
+      
+      // Set column widths to match reference
+      ws['!cols'] = [
+        { width: 20 }, // Column A (rotated labels)
+        { width: 25 }, // Column B (parameters)
+        { width: 15 }, // Column C (units)
+        { width: 15 }, // Column D (data values)
+        { width: 15 }, // Column E (empty data entry)
+        { width: 15 }, // Column F (empty data entry)
+        { width: 15 }, // Column G (empty data entry)
+        { width: 15 }, // Column H (empty data entry)
+        { width: 15 }, // Column I (empty data entry)
+        { width: 15 }, // Column J (empty data entry)
+        { width: 15 }  // Column K (empty data entry)
+      ];
+      
+      // Save file
+      XLSX.writeFile(wb, `${filename}-${new Date().toISOString().split('T')[0]}.xlsx`);
+      
+      return true;
+    } catch (e) {
+      console.error('Export failed:', e);
+      return false;
+    }
+  }
+
+  // Make export function globally available for Past Entries page
+  window.exportEntryWithData = exportEntryWithData;
 
   function exportHistoricalData() {
     try {

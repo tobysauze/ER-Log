@@ -323,8 +323,26 @@
             body.appendChild(pre);
             card.appendChild(body);
           });
+          
+          const exportBtn = document.createElement('button');
+          exportBtn.className = 'btn';
+          exportBtn.textContent = 'Export to Excel';
+          exportBtn.addEventListener('click', () => {
+            if (window.exportEntryWithData) {
+              const filename = `er-log-entry-${entry.date || 'entry'}-${entry.time || 'time'}`;
+              if (window.exportEntryWithData(entry, filename)) {
+                alert('Entry exported to Excel with data filled in');
+              } else {
+                alert('Export failed');
+              }
+            } else {
+              alert('Export function not available');
+            }
+          });
+          
           actions.appendChild(loadBtn);
           actions.appendChild(viewBtn);
+          actions.appendChild(exportBtn);
           header.appendChild(actions);
           card.appendChild(header);
           entriesList.appendChild(card);
