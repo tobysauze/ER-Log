@@ -45,6 +45,8 @@ const ALLOWED_KEYS = [
 const SYSTEM_PROMPT = `You are extracting numeric readings from engine room instrument photos.
 Output strict JSON: { "activeGenerators": number[], "entries": [{"path": string, "value": string|number|boolean}] }
 
+**CRITICAL INSTRUCTION: TAKE YOUR TIME AND BE EXTREMELY THOROUGH. This is a generator control panel with many critical readings. Examine every single detail methodically.**
+
 IMPORTANT: Look for ALL visible numeric values on generator control panels, including:
 - Engine speed (RPM)
 - Load percentage (%)
@@ -106,12 +108,13 @@ Rules:
 `;
 
 async function callOpenAI(imageDataUrls: string[]): Promise<any> {
+  // First pass: Comprehensive extraction
   const messages = [
     { role: 'system', content: SYSTEM_PROMPT },
     {
       role: 'user',
       content: [
-        { type: 'text', text: 'Extract readings and return the JSON.' },
+        { type: 'text', text: 'ANALYZE THOROUGHLY: This is a generator control panel. Take your time to examine EVERY detail. Look at every number, every gauge, every digital display, every rectangular box, every label. Extract ALL possible readings. Be methodical and thorough.' },
         ...imageDataUrls.map((u) => ({ type: 'image_url', image_url: { url: u } }))
       ]
     }
@@ -123,20 +126,86 @@ async function callOpenAI(imageDataUrls: string[]): Promise<any> {
       'Authorization': `Bearer ${OPENAI_API_KEY}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ model: MODEL, messages, temperature: 0 })
+    body: JSON.stringify({ 
+      model: MODEL, 
+      messages, 
+      temperature: 0,
+      max_tokens: 2000, // Increased from default
+      presence_penalty: 0.1, // Encourage more comprehensive responses
+      frequency_penalty: 0.1 // Encourage variety in extraction
+    })
   });
+  
   if (!resp.ok) throw new Error(await resp.text());
   const data = await resp.json();
   const text = data.choices?.[0]?.message?.content ?? '';
+  
   try {
     const jsonStart = text.indexOf('{');
     const jsonEnd = text.lastIndexOf('}');
     const json = JSON.parse(text.slice(jsonStart, jsonEnd + 1));
+    
     // Filter to allowed keys only
-    const entries = Array.isArray(json.entries) ? json.entries.filter((e: any) => ALLOWED_KEYS.includes(e.path)) : [];
+    let entries = Array.isArray(json.entries) ? json.entries.filter((e: any) => ALLOWED_KEYS.includes(e.path)) : [];
     const activeGenerators = Array.isArray(json.activeGenerators) ? json.activeGenerators.filter((n: any) => [1,2,3].includes(n)) : [];
+    
+    // If we got very few entries, try a second pass with more specific instructions
+    if (entries.length < 5 && imageDataUrls.length > 0) {
+      console.log('First pass yielded few entries, attempting second pass...');
+      
+      const secondPassMessages = [
+        { role: 'system', content: SYSTEM_PROMPT },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'SECOND PASS - BE EXTREMELY THOROUGH: The first analysis missed many readings. Look at this image again with maximum attention. Examine every single number, every display, every gauge, every box. Look for: Engine Hours, Fuel Temp, Fuel Pressure, Oil Temp, Sea Water Press, Battery Voltage, Boost Pressure, Inlet Air Temp, RPM, Load %, Fuel consumption, Coolant Temp, Oil Pressure. Extract EVERYTHING you can see.' },
+            ...imageDataUrls.map((u) => ({ type: 'image_url', image_url: { url: u } }))
+          ]
+        }
+      ];
+      
+      const secondResp = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          model: MODEL, 
+          messages: secondPassMessages, 
+          temperature: 0,
+          max_tokens: 2000
+        })
+      });
+      
+      if (secondResp.ok) {
+        const secondData = await secondResp.json();
+        const secondText = secondData.choices?.[0]?.message?.content ?? '';
+        try {
+          const secondJsonStart = secondText.indexOf('{');
+          const secondJsonEnd = secondText.lastIndexOf('}');
+          const secondJson = JSON.parse(secondText.slice(secondJsonStart, secondJsonEnd + 1));
+          const secondEntries = Array.isArray(secondJson.entries) ? secondJson.entries.filter((e: any) => ALLOWED_KEYS.includes(e.path)) : [];
+          
+          // Combine entries, avoiding duplicates
+          const combinedEntries = [...entries];
+          secondEntries.forEach(entry => {
+            if (!combinedEntries.some(e => e.path === entry.path)) {
+              combinedEntries.push(entry);
+            }
+          });
+          
+          entries = combinedEntries;
+          console.log(`Second pass added ${secondEntries.length} entries, total: ${entries.length}`);
+        } catch (e) {
+          console.log('Second pass parsing failed:', e);
+        }
+      }
+    }
+    
     return { entries, activeGenerators };
-  } catch {
+  } catch (e) {
+    console.error('OpenAI response parsing failed:', e);
     return { entries: [], activeGenerators: [] };
   }
 }
