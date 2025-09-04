@@ -55,13 +55,16 @@ Output strict JSON: { "activeGenerators": number[], "entries": [{"path": string,
 5. Look for both analog and digital readings
 6. Check corners, edges, and small displays
 7. Read every single number you can see
+8. **PAY SPECIAL ATTENTION TO DIGITAL READOUTS BELOW GAUGES**
+9. **LOOK FOR SMALL RECTANGULAR BOXES WITH VALUES**
+10. **SCAN THE ENTIRE IMAGE SYSTEMATICALLY - TOP TO BOTTOM, LEFT TO RIGHT**
 
 **MUST FIND THESE READINGS:**
-- Engine speed (RPM) - usually large circular gauge
-- Load percentage (%) - often bar graph
-- Fuel consumption (Lt/h) - often bar graph
-- Coolant temperature (°C) - circular gauge + digital display
-- Oil pressure (kPa) - circular gauge + digital display
+- Engine speed (RPM) - usually large circular gauge + digital readout below
+- Load percentage (%) - often bar graph + digital value
+- Fuel consumption (Lt/h) - often bar graph + digital value
+- Coolant temperature (°C) - circular gauge + digital display below
+- Oil pressure (kPa) - circular gauge + digital display below
 - Engine hours (hrs) - rectangular box display
 - Fuel temperature (°C) - rectangular box display
 - Fuel pressure (kPa) - rectangular box display
@@ -76,20 +79,35 @@ Output strict JSON: { "activeGenerators": number[], "entries": [{"path": string,
 - Active power (kW)
 - Reactive power (kVAr)
 - Frequency (Hz)
+- **Transmission oil temperature (°C)**
+- **Transmission oil pressure (kPa)**
+- **Exhaust gas temperatures (°C) - left and right**
+- **Exhaust overboard surface temperature (°C)**
+- **Fuel filter differential pressure (kPa)**
+- **Oil filter differential pressure (kPa)**
+- **Air filter differential pressure (kPa)**
+- **Sea water temperature (°C)**
 
-**LOOK EVERYWHERE:**
-- Main gauges (circular)
-- Bar graphs (vertical/horizontal)
-- Digital displays (rectangular boxes)
-- Small text labels with numbers
-- Corner displays
-- Status indicators
-- Any numeric value visible
+**LOOK EVERYWHERE - BE SYSTEMATIC:**
+- Main gauges (circular) - AND the digital readouts below them
+- Bar graphs (vertical/horizontal) - AND their associated digital values
+- Digital displays (rectangular boxes) - scan ALL of them
+- Small text labels with numbers - look for any text followed by numbers
+- Corner displays - check all corners
+- Status indicators - any numeric values
+- **Bottom sections with multiple rectangular boxes**
+- **Any area with grid-like layouts of values**
+- **Look for patterns like "V1.2 405.1", "A1 169.7", "kW 99.1"**
 
 **CRITICAL for three-phase monitoring:**
 - Capture ALL voltage readings (V1.2, V2.3, V3.1) - don't just pick one
 - Capture ALL current readings (A1, A2, A3) - don't just pick one
 - These are essential for detecting phase imbalances
+
+**DIGITAL READOUT PATTERNS TO LOOK FOR:**
+- Values like "405.1", "169.7", "99.1", "50.1"
+- Units like "V", "A", "kW", "kVAr", "Hz", "°C", "kPa", "Lt/h", "hrs"
+- Look for the pattern: "Label: Value Unit" or "Label Value Unit"
 
 **IMPORTANT for gauge readings:**
 - Look for BOTH analog needle positions AND digital readouts
@@ -97,6 +115,8 @@ Output strict JSON: { "activeGenerators": number[], "entries": [{"path": string,
 - Pay attention to units (°C, kPa, V, A, etc.) and convert to numeric values
 - For temperature gauges, look for the digital display in the center
 - For pressure gauges, look for both analog and digital readings
+- **ALWAYS check below gauges for digital readouts**
+- **Look for small rectangular boxes with values**
 
 **CRITICAL for generator panel data extraction:**
 - Look for ALL rectangular boxes and digital displays showing values
@@ -163,16 +183,16 @@ async function callOpenAI(imageDataUrls: string[]): Promise<any> {
     if (entries.length < 8 && imageDataUrls.length > 0) {
       console.log('First pass yielded few entries, attempting second pass...');
       
-      const secondPassMessages = [
-        { role: 'system', content: SYSTEM_PROMPT },
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: 'SECOND PASS - EMERGENCY RECOVERY: The first analysis was incomplete. This is your last chance to extract ALL data. Look at this image with MAXIMUM intensity. Examine EVERY pixel, EVERY corner, EVERY display. Look for: Engine Hours (hrs), Fuel Temp (°C), Fuel Pressure (kPa), Oil Temp (°C), Sea Water Press (kPa), Battery Voltage (V), Boost Pressure (kPa), Inlet Air Temp (°C), RPM, Load (%), Fuel consumption (Lt/h), Coolant Temp (°C), Oil Pressure (kPa), Voltage readings (V1.2, V2.3, V3.1), Current readings (A1, A2, A3), Power (kW, kVAr), Frequency (Hz). Extract EVERY SINGLE NUMBER you can see. Be exhaustive.' },
-            ...imageDataUrls.map((u) => ({ type: 'image_url', image_url: { url: u } }))
-          ]
-        }
-      ];
+                        const secondPassMessages = [
+                    { role: 'system', content: SYSTEM_PROMPT },
+                    {
+                      role: 'user',
+                      content: [
+                        { type: 'text', text: 'SECOND PASS - EMERGENCY RECOVERY: The first analysis was incomplete. This is your last chance to extract ALL data. Look at this image with MAXIMUM intensity. Examine EVERY pixel, EVERY corner, EVERY display. Look for: Engine Hours (hrs), Fuel Temp (°C), Fuel Pressure (kPa), Oil Temp (°C), Sea Water Press (kPa), Battery Voltage (V), Boost Pressure (kPa), Inlet Air Temp (°C), RPM, Load (%), Fuel consumption (Lt/h), Coolant Temp (°C), Oil Pressure (kPa), Voltage readings (V1.2, V2.3, V3.1), Current readings (A1, A2, A3), Power (kW, kVAr), Frequency (Hz), Transmission oil temp/pressure, Exhaust temps, Filter differential pressures. Extract EVERY SINGLE NUMBER you can see. Be exhaustive. Look for digital readouts below gauges and small rectangular boxes with values.' },
+                        ...imageDataUrls.map((u) => ({ type: 'image_url', image_url: { url: u } }))
+                      ]
+                    }
+                  ];
       
       const secondResp = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -212,16 +232,16 @@ async function callOpenAI(imageDataUrls: string[]): Promise<any> {
           if (entries.length < 12 && imageDataUrls.length > 0) {
             console.log('Still missing data, attempting third pass...');
             
-            const thirdPassMessages = [
-              { role: 'system', content: SYSTEM_PROMPT },
-              {
-                role: 'user',
-                content: [
-                  { type: 'text', text: 'THIRD PASS - FINAL ATTEMPT: Use a completely different approach. Instead of looking for specific readings, scan the image systematically: top to bottom, left to right. Look for ANY number, ANY display, ANY gauge, ANY text with numbers. Focus on: 1) Large circular gauges, 2) Bar graphs, 3) Rectangular digital displays, 4) Small text labels, 5) Corner displays, 6) Status indicators. Extract EVERY numeric value visible, regardless of what it represents. Be methodical and thorough.' },
-                  ...imageDataUrls.map((u) => ({ type: 'image_url', image_url: { url: u } }))
-                ]
-              }
-            ];
+                                    const thirdPassMessages = [
+                          { role: 'system', content: SYSTEM_PROMPT },
+                          {
+                            role: 'user',
+                            content: [
+                              { type: 'text', text: 'THIRD PASS - FINAL ATTEMPT: Use a completely different approach. Instead of looking for specific readings, scan the image systematically: top to bottom, left to right. Look for ANY number, ANY display, ANY gauge, ANY text with numbers. Focus on: 1) Large circular gauges, 2) Bar graphs, 3) Rectangular digital displays, 4) Small text labels, 5) Corner displays, 6) Status indicators, 7) Digital readouts below gauges, 8) Small rectangular boxes with values, 9) Grid layouts of parameters. Extract EVERY numeric value visible, regardless of what it represents. Be methodical and thorough. Look for patterns like "V1.2 405.1", "A1 169.7", "kW 99.1", "Load 50%", "Fuel 29 Lt/h".' },
+                              ...imageDataUrls.map((u) => ({ type: 'image_url', image_url: { url: u } }))
+                            ]
+                          }
+                        ];
             
             const thirdResp = await fetch('https://api.openai.com/v1/chat/completions', {
               method: 'POST',
