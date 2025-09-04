@@ -182,107 +182,128 @@
     });
   }
 
-  // Excel Export functionality
+  // Excel Export functionality - matches exact reference format
   function exportToExcel(data, filename = 'er-log-data') {
     // Create workbook and worksheet
     const wb = XLSX.utils.book_new();
     
-    // Convert data to worksheet format
+    // Create worksheet with exact layout from reference
     const wsData = [];
     
-    // Add headers
-    const headers = [
-      'Date', 'Time', 'From Port', 'To Port', 'Route/Notes',
-      'Generator 1 - kW', 'Generator 1 - kVAr', 'Generator 1 - Hz',
-      'Generator 1 - Amps A1', 'Generator 1 - Amps A2', 'Generator 1 - Amps A3',
-      'Generator 1 - Voltage V1.2', 'Generator 1 - Voltage V2.3', 'Generator 1 - Voltage V3.1',
-      'Generator 1 - RPM', 'Generator 1 - Fuel Consumption', 'Generator 1 - Load %',
-      'Generator 1 - Coolant Temp', 'Generator 1 - Oil Pressure', 'Generator 1 - Fuel Temp',
-      'Generator 1 - Fuel Pressure', 'Generator 1 - Sea Water Pressure', 'Generator 1 - Oil Temperature',
-      'Generator 1 - Boost Pressure', 'Generator 1 - Inlet Air Temp', 'Generator 1 - Engine Hours',
-      'Generator 1 - Battery Voltage',
-      'Generator 2 - kW', 'Generator 2 - kVAr', 'Generator 2 - Hz',
-      'Generator 2 - Amps A1', 'Generator 2 - Amps A2', 'Generator 2 - Amps A3',
-      'Generator 2 - Voltage V1.2', 'Generator 2 - Voltage V2.3', 'Generator 2 - Voltage V3.1',
-      'Generator 2 - RPM', 'Generator 2 - Fuel Consumption', 'Generator 2 - Load %',
-      'Generator 2 - Coolant Temp', 'Generator 2 - Oil Pressure', 'Generator 2 - Fuel Temp',
-      'Generator 2 - Fuel Pressure', 'Generator 2 - Sea Water Pressure', 'Generator 2 - Oil Temperature',
-      'Generator 2 - Boost Pressure', 'Generator 2 - Inlet Air Temp', 'Generator 2 - Engine Hours',
-      'Generator 2 - Battery Voltage',
-      'Generator 3 - kW', 'Generator 3 - kVAr', 'Generator 3 - Hz',
-      'Generator 3 - Amps A1', 'Generator 3 - Amps A2', 'Generator 3 - Amps A3',
-      'Generator 3 - Voltage V1.2', 'Generator 3 - Voltage V2.3', 'Generator 3 - Voltage V3.1',
-      'Generator 3 - RPM', 'Generator 3 - Fuel Consumption', 'Generator 3 - Load %',
-      'Generator 3 - Coolant Temp', 'Generator 3 - Oil Pressure', 'Generator 3 - Fuel Temp',
-      'Generator 3 - Fuel Pressure', 'Generator 3 - Sea Water Pressure', 'Generator 3 - Oil Temperature',
-      'Generator 3 - Boost Pressure', 'Generator 3 - Inlet Air Temp', 'Generator 3 - Engine Hours',
-      'Generator 3 - Battery Voltage',
-      'Port Engine - RPM', 'Port Engine - Fuel Pressure', 'Port Engine - Oil Temp',
-      'Port Engine - S/W Pressure', 'Port Engine - Boost Pressure', 'Port Engine - Scavenge Air',
-      'Port Engine - Left Exhaust', 'Port Engine - Right Exhaust', 'Port Engine - Ex O/B Surface',
-      'Port Engine - Fuel Differential', 'Port Engine - Oil Differential', 'Port Engine - Coolant Temp',
-      'Port Engine - Oil Pressure', 'Port Engine - Trans Gear Temp', 'Port Engine - Trans Oil Pressure',
-      'Port Engine - Fuel Consumption', 'Port Engine - Load %', 'Port Engine - Shaft Flow',
-      'Port Engine - Thrust Bearing Temp', 'Port Engine - Ex Sea Water Press',
-      'Starboard Engine - RPM', 'Starboard Engine - Fuel Pressure', 'Starboard Engine - Oil Temp',
-      'Starboard Engine - S/W Pressure', 'Starboard Engine - Boost Pressure', 'Starboard Engine - Scavenge Air',
-      'Starboard Engine - Left Exhaust', 'Starboard Engine - Right Exhaust', 'Starboard Engine - Ex O/B Surface',
-      'Starboard Engine - Fuel Differential', 'Starboard Engine - Oil Differential', 'Starboard Engine - Coolant Temp',
-      'Starboard Engine - Oil Pressure', 'Starboard Engine - Trans Gear Temp', 'Starboard Engine - Trans Oil Pressure',
-      'Starboard Engine - Fuel Consumption', 'Starboard Engine - Load %', 'Starboard Engine - Shaft Flow',
-      'Starboard Engine - Thrust Bearing Temp', 'Starboard Engine - Ex Sea Water Press',
-      'Other - Sea Water Temp', 'Other - Day Tank Temp'
-    ];
-    wsData.push(headers);
+    // Row 1: Header with Day, Date, Notes
+    wsData.push(['', '', '', 'Day 1', '', '', '', data.date || '6-Feb-25', '', '', 'Notes']);
     
-    // Add data row
-    const row = [
-      data.date || '',
-      data.time || '',
-      data.from || '',
-      data.to || '',
-      data.route || '',
-      data['gen1.kw'] || '', data['gen1.kvar'] || '', data['gen1.hz'] || '',
-      data['gen1.amps_a1'] || '', data['gen1.amps_a2'] || '', data['gen1.amps_a3'] || '',
-      data['gen1.voltage_v1_2'] || '', data['gen1.voltage_v2_3'] || '', data['gen1.voltage_v3_1'] || '',
-      data['gen1.rpm'] || '', data['gen1.fuel_consumption_l_min'] || '', data['gen1.load_pct'] || '',
-      data['gen1.coolant_temp_°c'] || '', data['gen1.oil_pressure_kpa'] || '', data['gen1.fuel_temp_°c'] || '',
-      data['gen1.fuel_pressure_kpa'] || '', data['gen1.sea_water_pressure_kpa'] || '', data['gen1.oil_temperature'] || '',
-      data['gen1.boost_pressure_kpa'] || '', data['gen1.inlet_air_temp_°c'] || '', data['gen1.engine_hours'] || '',
-      data['gen1.battery_voltage'] || '',
-      data['gen2.kw'] || '', data['gen2.kvar'] || '', data['gen2.kvar'] || '', data['gen2.hz'] || '',
-      data['gen2.amps_a1'] || '', data['gen2.amps_a2'] || '', data['gen2.amps_a3'] || '',
-      data['gen2.voltage_v1_2'] || '', data['gen2.voltage_v2_3'] || '', data['gen2.voltage_v3_1'] || '',
-      data['gen2.rpm'] || '', data['gen2.fuel_consumption_l_min'] || '', data['gen2.load_pct'] || '',
-      data['gen2.coolant_temp_°c'] || '', data['gen2.oil_pressure_kpa'] || '', data['gen2.fuel_temp_°c'] || '',
-      data['gen2.fuel_pressure_kpa'] || '', data['gen2.sea_water_pressure_kpa'] || '', data['gen2.oil_temperature'] || '',
-      data['gen2.boost_pressure_kpa'] || '', data['gen2.inlet_air_temp_°c'] || '', data['gen2.engine_hours'] || '',
-      data['gen2.battery_voltage'] || '',
-      data['gen3.kw'] || '', data['gen3.kvar'] || '', data['gen3.hz'] || '',
-      data['gen3.amps_a1'] || '', data['gen3.amps_a2'] || '', data['gen3.amps_a3'] || '',
-      data['gen3.voltage_v1_2'] || '', data['gen3.voltage_v2_3'] || '', data['gen3.voltage_v3_1'] || '',
-      data['gen3.rpm'] || '', data['gen3.fuel_consumption_l_min'] || '', data['gen3.load_pct'] || '',
-      data['gen3.coolant_temp_°c'] || '', data['gen3.oil_pressure_kpa'] || '', data['gen3.fuel_temp_°c'] || '',
-      data['gen3.fuel_pressure_kpa'] || '', data['gen3.sea_water_pressure_kpa'] || '', data['gen3.oil_temperature'] || '',
-      data['gen3.boost_pressure_kpa'] || '', data['gen3.inlet_air_temp_°c'] || '', data['gen3.engine_hours'] || '',
-      data['gen3.battery_voltage'] || '',
-      data['port.rpm'] || '', data['port.fuelPressure'] || '', data['port.oilTemp'] || '',
-      data['port.swPressure'] || '', data['port.boostPressure'] || '', data['port.scavengeAir'] || '',
-      data['port.leftExhaust'] || '', data['port.rightExhaust'] || '', data['port.exSurface'] || '',
-      data['port.fuelDiff'] || '', data['port.oilDiff'] || '', data['port.coolantTemp'] || '',
-      data['port.oilPressure'] || '', data['port.transGearTemp'] || '', data['port.transOilPressure'] || '',
-      data['port.fuelConsumption'] || '', data['port.loadPct'] || '', data['port.shaftFlow'] || '',
-      data['port.thrustBearingTemp'] || '', data['port.exSeaWaterPress'] || '',
-      data['stbd.rpm'] || '', data['stbd.fuelPressure'] || '', data['stbd.oilTemp'] || '',
-      data['stbd.swPressure'] || '', data['stbd.boostPressure'] || '', data['stbd.scavengeAir'] || '',
-      data['stbd.leftExhaust'] || '', data['stbd.rightExhaust'] || '', data['stbd.exSurface'] || '',
-      data['stbd.fuelDiff'] || '', data['stbd.oilDiff'] || '', data['stbd.coolantTemp'] || '',
-      data['stbd.oilPressure'] || '', data['stbd.transGearTemp'] || '', data['stbd.transOilPressure'] || '',
-      data['stbd.fuelConsumption'] || '', data['stbd.loadPct'] || '', data['stbd.shaftFlow'] || '',
-      data['stbd.thrustBearingTemp'] || '', data['stbd.exSeaWaterPress'] || '',
-      data['other.seaWaterTemp'] || '', data['other.dayTankTemp'] || ''
+    // Row 2: Empty
+    wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
+    
+    // Row 3: PORT main Engine header
+    wsData.push(['', 'PORT main Engine', '', '', '', '', '', '', '', '', '']);
+    
+    // Row 4: Empty
+    wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
+    
+    // PORT main Engine parameters (rows 5-24)
+    const portParams = [
+      ['Engines Advanced (AMS)', 'RPM', 'RPM'],
+      ['', 'Fuel Pressure', 'kPa'],
+      ['', 'Oil Temperature', 'C'],
+      ['', 'S W Pressure', 'kPa'],
+      ['', 'Boost Pressure', 'kPa'],
+      ['', 'Scavange air', 'C'],
+      ['', 'Left Exhaust', 'C'],
+      ['', 'Right Exhaust', 'C'],
+      ['', 'Ex O/B Surface temp', 'C'],
+      ['', 'Fuel Differential', 'kPa'],
+      ['', 'Oil Differential', 'kPa'],
+      ['', 'Coolant Temp', 'C'],
+      ['', 'Oil Pressure', 'kPa'],
+      ['', 'Trans gear Temp', 'C'],
+      ['', 'Trans oil pressure', 'kPa'],
+      ['', 'Fuel consumption', 'l/h'],
+      ['', 'Load', '%'],
+      ['', 'Shaft Flow', 'l/min'],
+      ['', 'Thrust bearing Temp', 'C'],
+      ['', 'Ex Sea water Press', 'kPa']
     ];
-    wsData.push(row);
+    
+    // Add PORT parameters
+    portParams.forEach((row, index) => {
+      const wsRow = [row[0], row[1], row[2]];
+      // Add empty columns D-K
+      for (let i = 0; i < 8; i++) {
+        wsRow.push('');
+      }
+      wsData.push(wsRow);
+    });
+    
+    // Row 25: Empty
+    wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
+    
+    // Row 26: STBD main Engine header
+    wsData.push(['', 'STBD main Engine', '', '', '', '', '', '', '', '', '']);
+    
+    // Row 27: Empty
+    wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
+    
+    // STBD main Engine parameters (rows 28-47) - same as PORT
+    const stbdParams = [
+      ['Engines Advanced (AMS)', 'RPM', 'RPM'],
+      ['', 'Fuel Pressure', 'kPa'],
+      ['', 'Oil Temperature', 'C'],
+      ['', 'S W Pressure', 'kPa'],
+      ['', 'Boost Pressure', 'kPa'],
+      ['', 'Scavange air', 'C'],
+      ['', 'Left Exhaust', 'C'],
+      ['', 'Right Exhaust', 'C'],
+      ['', 'Ex O/B Surface temp', 'C'],
+      ['', 'Fuel Differential', 'kPa'],
+      ['', 'Oil Differential', 'kPa'],
+      ['', 'Coolant Temp', 'C'],
+      ['', 'Oil Pressure', 'kPa'],
+      ['', 'Trans gear Temp', 'C'],
+      ['', 'Trans oil pressure', 'kPa'],
+      ['', 'Fuel consumption', 'l/h'],
+      ['', 'Load', '%'],
+      ['', 'Shaft Flow', 'l/min'],
+      ['', 'Thrust bearing Temp', 'C'],
+      ['', 'Ex Sea water Press', 'kPa']
+    ];
+    
+    // Add STBD parameters
+    stbdParams.forEach((row, index) => {
+      const wsRow = [row[0], row[1], row[2]];
+      // Add empty columns D-K
+      for (let i = 0; i < 8; i++) {
+        wsRow.push('');
+      }
+      wsData.push(wsRow);
+    });
+    
+    // Row 48: Empty
+    wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
+    
+    // Row 49: Online Generator header
+    wsData.push(['', 'Online Generator', '', '', '', '', '', '', '', '', '']);
+    
+    // Row 50: Empty
+    wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
+    
+    // Online Generator parameters (rows 51-53)
+    const genParams = [
+      ['Genset Electrical', 'DG1/DG2/DG3', '#'],
+      ['', 'kW', 'kW'],
+      ['', 'kVAr', 'kVAr']
+    ];
+    
+    // Add Generator parameters
+    genParams.forEach((row, index) => {
+      const wsRow = [row[0], row[1], row[2]];
+      // Add empty columns D-K
+      for (let i = 0; i < 8; i++) {
+        wsRow.push('');
+      }
+      wsData.push(wsRow);
+    });
     
     // Create worksheet
     const ws = XLSX.utils.aoa_to_sheet(wsData);
@@ -290,9 +311,20 @@
     // Add to workbook
     XLSX.utils.book_append_sheet(wb, ws, 'ER Log Data');
     
-    // Auto-size columns
-    const colWidths = headers.map(h => Math.max(h.length, 15));
-    ws['!cols'] = colWidths.map(w => ({ width: w }));
+    // Set column widths to match reference
+    ws['!cols'] = [
+      { width: 20 }, // Column A (rotated labels)
+      { width: 25 }, // Column B (parameters)
+      { width: 15 }, // Column C (units)
+      { width: 15 }, // Column D (empty data entry)
+      { width: 15 }, // Column E (empty data entry)
+      { width: 15 }, // Column F (empty data entry)
+      { width: 15 }, // Column G (empty data entry)
+      { width: 15 }, // Column H (empty data entry)
+      { width: 15 }, // Column I (empty data entry)
+      { width: 15 }, // Column J (empty data entry)
+      { width: 15 }  // Column K (empty data entry)
+    ];
     
     // Save file
     XLSX.writeFile(wb, `${filename}-${new Date().toISOString().split('T')[0]}.xlsx`);
