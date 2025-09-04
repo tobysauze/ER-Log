@@ -739,6 +739,16 @@ function renderGenMatrixSection(section) {
       else if (rowLabel === 'Hz') fieldName = 'hz';
       else if (rowLabel === 'Engine Hours (hrs)') fieldName = 'engine_hours';
       else if (rowLabel === 'Battery Voltage (V)') fieldName = 'battery_voltage';
+      else if (rowLabel === 'Coolant Temp (°C)') fieldName = 'coolant_temp_°c';
+      else if (rowLabel === 'Oil Pressure (kPa)') fieldName = 'oil_pressure_kpa';
+      else if (rowLabel === 'Fuel Temp (°C)') fieldName = 'fuel_temp_°c';
+      else if (rowLabel === 'Fuel Pressure (kPa)') fieldName = 'fuel_pressure_kpa';
+      else if (rowLabel === 'Sea water Pressure (kPa)') fieldName = 'sea_water_pressure_kpa';
+      else if (rowLabel === 'Oil Temperature (°C)') fieldName = 'oil_temperature';
+      else if (rowLabel === 'Boost Pressure (kPa)') fieldName = 'boost_pressure_kpa';
+      else if (rowLabel === 'Inlet Air Temp (°C)') fieldName = 'inlet_air_temp_°c';
+      else if (rowLabel === 'Fuel consumption (L/min)') fieldName = 'fuel_consumption_l_min';
+      else if (rowLabel === 'Load (%)') fieldName = 'load_pct';
       
       const key = `gen${id}.${fieldName}`;
       const inp = el('input', { name: key, type: rowLabel.toLowerCase().includes('check') ? 'checkbox' : 'text' });

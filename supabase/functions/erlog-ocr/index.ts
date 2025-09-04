@@ -71,6 +71,13 @@ IMPORTANT: Look for ALL visible numeric values on generator control panels, incl
 - Capture ALL current readings (A1, A2, A3) - don't just pick one
 - These are essential for detecting phase imbalances
 
+**IMPORTANT for gauge readings:**
+- Look for BOTH analog needle positions AND digital readouts
+- Digital readouts are usually more accurate than analog needle positions
+- Pay attention to units (°C, kPa, V, A, etc.) and convert to numeric values
+- For temperature gauges, look for the digital display in the center
+- For pressure gauges, look for both analog and digital readings
+
 Rules:
 - Use ONLY these allowed paths when possible: ${ALLOWED_KEYS.join(', ')}
 - If a value has units, convert to the numeric value only where reasonable (e.g., 624 kPa → 624, 23 Lt/h → 23).
