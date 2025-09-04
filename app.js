@@ -761,14 +761,21 @@
   if (runOcrBtn && filesEl) runOcrBtn.addEventListener('click', async () => {
     try {
       runOcrBtn.disabled = true;
-      const processingToast = toast('Processing photos...');
+      
+      // Show processing indicator
+      const processingIndicator = document.getElementById('processingIndicator');
+      if (processingIndicator) {
+        processingIndicator.classList.remove('hidden');
+      }
+      
       await runImageIngestion(filesEl.files);
-      // Keep processing toast visible until data is applied
-      setTimeout(() => {
-        if (processingToast && processingToast.style) {
-          processingToast.style.opacity = '0';
-        }
-      }, 2000); // Show for 2 seconds after completion
+      
+      // Hide processing indicator after completion
+      if (processingIndicator) {
+        processingIndicator.classList.add('hidden');
+      }
+      
+      toast('Photos processed successfully!');
     } finally {
       runOcrBtn.disabled = false;
     }

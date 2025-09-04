@@ -139,6 +139,64 @@ textarea { resize: vertical; min-height: 120px; }
 .table-grid input { width: 100%; }
 .hidden { display: none !important; }
 
+/* Processing indicator styles */
+.processing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  color: white;
+  margin: 16px 0;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+  animation: slideIn 0.3s ease-out;
+}
+
+.processing-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.processing-text {
+  flex: 1;
+}
+
+.processing-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.processing-subtitle {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.processing-indicator.hidden {
+  display: none;
+}
+
 /* Print styling */
 @media print {
   body { background: white; color: black; }
