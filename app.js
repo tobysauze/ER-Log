@@ -171,6 +171,260 @@
   });
 
   printBtn.addEventListener('click', () => window.print());
+
+  // Excel Export button
+  const exportCurrentBtn = document.getElementById('exportCurrentBtn');
+  if (exportCurrentBtn) {
+    exportCurrentBtn.addEventListener('click', () => {
+      const formData = serializeForm(form);
+      exportToExcel(formData, 'er-log-current');
+      toast('Current form data exported to Excel');
+    });
+  }
+
+  // Excel Export functionality
+  function exportToExcel(data, filename = 'er-log-data') {
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    
+    // Convert data to worksheet format
+    const wsData = [];
+    
+    // Add headers
+    const headers = [
+      'Date', 'Time', 'From Port', 'To Port', 'Route/Notes',
+      'Generator 1 - kW', 'Generator 1 - kVAr', 'Generator 1 - Hz',
+      'Generator 1 - Amps A1', 'Generator 1 - Amps A2', 'Generator 1 - Amps A3',
+      'Generator 1 - Voltage V1.2', 'Generator 1 - Voltage V2.3', 'Generator 1 - Voltage V3.1',
+      'Generator 1 - RPM', 'Generator 1 - Fuel Consumption', 'Generator 1 - Load %',
+      'Generator 1 - Coolant Temp', 'Generator 1 - Oil Pressure', 'Generator 1 - Fuel Temp',
+      'Generator 1 - Fuel Pressure', 'Generator 1 - Sea Water Pressure', 'Generator 1 - Oil Temperature',
+      'Generator 1 - Boost Pressure', 'Generator 1 - Inlet Air Temp', 'Generator 1 - Engine Hours',
+      'Generator 1 - Battery Voltage',
+      'Generator 2 - kW', 'Generator 2 - kVAr', 'Generator 2 - Hz',
+      'Generator 2 - Amps A1', 'Generator 2 - Amps A2', 'Generator 2 - Amps A3',
+      'Generator 2 - Voltage V1.2', 'Generator 2 - Voltage V2.3', 'Generator 2 - Voltage V3.1',
+      'Generator 2 - RPM', 'Generator 2 - Fuel Consumption', 'Generator 2 - Load %',
+      'Generator 2 - Coolant Temp', 'Generator 2 - Oil Pressure', 'Generator 2 - Fuel Temp',
+      'Generator 2 - Fuel Pressure', 'Generator 2 - Sea Water Pressure', 'Generator 2 - Oil Temperature',
+      'Generator 2 - Boost Pressure', 'Generator 2 - Inlet Air Temp', 'Generator 2 - Engine Hours',
+      'Generator 2 - Battery Voltage',
+      'Generator 3 - kW', 'Generator 3 - kVAr', 'Generator 3 - Hz',
+      'Generator 3 - Amps A1', 'Generator 3 - Amps A2', 'Generator 3 - Amps A3',
+      'Generator 3 - Voltage V1.2', 'Generator 3 - Voltage V2.3', 'Generator 3 - Voltage V3.1',
+      'Generator 3 - RPM', 'Generator 3 - Fuel Consumption', 'Generator 3 - Load %',
+      'Generator 3 - Coolant Temp', 'Generator 3 - Oil Pressure', 'Generator 3 - Fuel Temp',
+      'Generator 3 - Fuel Pressure', 'Generator 3 - Sea Water Pressure', 'Generator 3 - Oil Temperature',
+      'Generator 3 - Boost Pressure', 'Generator 3 - Inlet Air Temp', 'Generator 3 - Engine Hours',
+      'Generator 3 - Battery Voltage',
+      'Port Engine - RPM', 'Port Engine - Fuel Pressure', 'Port Engine - Oil Temp',
+      'Port Engine - S/W Pressure', 'Port Engine - Boost Pressure', 'Port Engine - Scavenge Air',
+      'Port Engine - Left Exhaust', 'Port Engine - Right Exhaust', 'Port Engine - Ex O/B Surface',
+      'Port Engine - Fuel Differential', 'Port Engine - Oil Differential', 'Port Engine - Coolant Temp',
+      'Port Engine - Oil Pressure', 'Port Engine - Trans Gear Temp', 'Port Engine - Trans Oil Pressure',
+      'Port Engine - Fuel Consumption', 'Port Engine - Load %', 'Port Engine - Shaft Flow',
+      'Port Engine - Thrust Bearing Temp', 'Port Engine - Ex Sea Water Press',
+      'Starboard Engine - RPM', 'Starboard Engine - Fuel Pressure', 'Starboard Engine - Oil Temp',
+      'Starboard Engine - S/W Pressure', 'Starboard Engine - Boost Pressure', 'Starboard Engine - Scavenge Air',
+      'Starboard Engine - Left Exhaust', 'Starboard Engine - Right Exhaust', 'Starboard Engine - Ex O/B Surface',
+      'Starboard Engine - Fuel Differential', 'Starboard Engine - Oil Differential', 'Starboard Engine - Coolant Temp',
+      'Starboard Engine - Oil Pressure', 'Starboard Engine - Trans Gear Temp', 'Starboard Engine - Trans Oil Pressure',
+      'Starboard Engine - Fuel Consumption', 'Starboard Engine - Load %', 'Starboard Engine - Shaft Flow',
+      'Starboard Engine - Thrust Bearing Temp', 'Starboard Engine - Ex Sea Water Press',
+      'Other - Sea Water Temp', 'Other - Day Tank Temp'
+    ];
+    wsData.push(headers);
+    
+    // Add data row
+    const row = [
+      data.date || '',
+      data.time || '',
+      data.from || '',
+      data.to || '',
+      data.route || '',
+      data['gen1.kw'] || '', data['gen1.kvar'] || '', data['gen1.hz'] || '',
+      data['gen1.amps_a1'] || '', data['gen1.amps_a2'] || '', data['gen1.amps_a3'] || '',
+      data['gen1.voltage_v1_2'] || '', data['gen1.voltage_v2_3'] || '', data['gen1.voltage_v3_1'] || '',
+      data['gen1.rpm'] || '', data['gen1.fuel_consumption_l_min'] || '', data['gen1.load_pct'] || '',
+      data['gen1.coolant_temp_°c'] || '', data['gen1.oil_pressure_kpa'] || '', data['gen1.fuel_temp_°c'] || '',
+      data['gen1.fuel_pressure_kpa'] || '', data['gen1.sea_water_pressure_kpa'] || '', data['gen1.oil_temperature'] || '',
+      data['gen1.boost_pressure_kpa'] || '', data['gen1.inlet_air_temp_°c'] || '', data['gen1.engine_hours'] || '',
+      data['gen1.battery_voltage'] || '',
+      data['gen2.kw'] || '', data['gen2.kvar'] || '', data['gen2.kvar'] || '', data['gen2.hz'] || '',
+      data['gen2.amps_a1'] || '', data['gen2.amps_a2'] || '', data['gen2.amps_a3'] || '',
+      data['gen2.voltage_v1_2'] || '', data['gen2.voltage_v2_3'] || '', data['gen2.voltage_v3_1'] || '',
+      data['gen2.rpm'] || '', data['gen2.fuel_consumption_l_min'] || '', data['gen2.load_pct'] || '',
+      data['gen2.coolant_temp_°c'] || '', data['gen2.oil_pressure_kpa'] || '', data['gen2.fuel_temp_°c'] || '',
+      data['gen2.fuel_pressure_kpa'] || '', data['gen2.sea_water_pressure_kpa'] || '', data['gen2.oil_temperature'] || '',
+      data['gen2.boost_pressure_kpa'] || '', data['gen2.inlet_air_temp_°c'] || '', data['gen2.engine_hours'] || '',
+      data['gen2.battery_voltage'] || '',
+      data['gen3.kw'] || '', data['gen3.kvar'] || '', data['gen3.hz'] || '',
+      data['gen3.amps_a1'] || '', data['gen3.amps_a2'] || '', data['gen3.amps_a3'] || '',
+      data['gen3.voltage_v1_2'] || '', data['gen3.voltage_v2_3'] || '', data['gen3.voltage_v3_1'] || '',
+      data['gen3.rpm'] || '', data['gen3.fuel_consumption_l_min'] || '', data['gen3.load_pct'] || '',
+      data['gen3.coolant_temp_°c'] || '', data['gen3.oil_pressure_kpa'] || '', data['gen3.fuel_temp_°c'] || '',
+      data['gen3.fuel_pressure_kpa'] || '', data['gen3.sea_water_pressure_kpa'] || '', data['gen3.oil_temperature'] || '',
+      data['gen3.boost_pressure_kpa'] || '', data['gen3.inlet_air_temp_°c'] || '', data['gen3.engine_hours'] || '',
+      data['gen3.battery_voltage'] || '',
+      data['port.rpm'] || '', data['port.fuelPressure'] || '', data['port.oilTemp'] || '',
+      data['port.swPressure'] || '', data['port.boostPressure'] || '', data['port.scavengeAir'] || '',
+      data['port.leftExhaust'] || '', data['port.rightExhaust'] || '', data['port.exSurface'] || '',
+      data['port.fuelDiff'] || '', data['port.oilDiff'] || '', data['port.coolantTemp'] || '',
+      data['port.oilPressure'] || '', data['port.transGearTemp'] || '', data['port.transOilPressure'] || '',
+      data['port.fuelConsumption'] || '', data['port.loadPct'] || '', data['port.shaftFlow'] || '',
+      data['port.thrustBearingTemp'] || '', data['port.exSeaWaterPress'] || '',
+      data['stbd.rpm'] || '', data['stbd.fuelPressure'] || '', data['stbd.oilTemp'] || '',
+      data['stbd.swPressure'] || '', data['stbd.boostPressure'] || '', data['stbd.scavengeAir'] || '',
+      data['stbd.leftExhaust'] || '', data['stbd.rightExhaust'] || '', data['stbd.exSurface'] || '',
+      data['stbd.fuelDiff'] || '', data['stbd.oilDiff'] || '', data['stbd.coolantTemp'] || '',
+      data['stbd.oilPressure'] || '', data['stbd.transGearTemp'] || '', data['stbd.transOilPressure'] || '',
+      data['stbd.fuelConsumption'] || '', data['stbd.loadPct'] || '', data['stbd.shaftFlow'] || '',
+      data['stbd.thrustBearingTemp'] || '', data['stbd.exSeaWaterPress'] || '',
+      data['other.seaWaterTemp'] || '', data['other.dayTankTemp'] || ''
+    ];
+    wsData.push(row);
+    
+    // Create worksheet
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    
+    // Add to workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'ER Log Data');
+    
+    // Auto-size columns
+    const colWidths = headers.map(h => Math.max(h.length, 15));
+    ws['!cols'] = colWidths.map(w => ({ width: w }));
+    
+    // Save file
+    XLSX.writeFile(wb, `${filename}-${new Date().toISOString().split('T')[0]}.xlsx`);
+  }
+
+  function exportHistoricalData() {
+    try {
+      const entries = JSON.parse(localStorage.getItem('erlog:entries') || '[]');
+      if (entries.length === 0) {
+        toast('No historical data to export');
+        return;
+      }
+      
+      // Create workbook and worksheet
+      const wb = XLSX.utils.book_new();
+      
+      // Headers
+      const headers = [
+        'Entry Date', 'Entry Time', 'From Port', 'To Port', 'Route/Notes',
+        'Generator 1 - kW', 'Generator 1 - kVAr', 'Generator 1 - Hz',
+        'Generator 1 - Amps A1', 'Generator 1 - Amps A2', 'Generator 1 - Amps A3',
+        'Generator 1 - Voltage V1.2', 'Generator 1 - Voltage V2.3', 'Generator 1 - Voltage V3.1',
+        'Generator 1 - RPM', 'Generator 1 - Fuel Consumption', 'Generator 1 - Load %',
+        'Generator 1 - Coolant Temp', 'Generator 1 - Oil Pressure', 'Generator 1 - Fuel Temp',
+        'Generator 1 - Fuel Pressure', 'Generator 1 - Sea Water Pressure', 'Generator 1 - Oil Temperature',
+        'Generator 1 - Boost Pressure', 'Generator 1 - Inlet Air Temp', 'Generator 1 - Engine Hours',
+        'Generator 1 - Battery Voltage',
+        'Generator 2 - kW', 'Generator 2 - kVAr', 'Generator 2 - Hz',
+        'Generator 2 - Amps A1', 'Generator 2 - Amps A2', 'Generator 2 - Amps A3',
+        'Generator 2 - Voltage V1.2', 'Generator 2 - Voltage V2.3', 'Generator 2 - Voltage V2.3',
+        'Generator 2 - RPM', 'Generator 2 - Fuel Consumption', 'Generator 2 - Load %',
+        'Generator 2 - Coolant Temp', 'Generator 2 - Oil Pressure', 'Generator 2 - Fuel Temp',
+        'Generator 2 - Fuel Pressure', 'Generator 2 - Sea Water Pressure', 'Generator 2 - Oil Temperature',
+        'Generator 2 - Boost Pressure', 'Generator 2 - Inlet Air Temp', 'Generator 2 - Engine Hours',
+        'Generator 2 - Battery Voltage',
+        'Generator 3 - kW', 'Generator 3 - kVAr', 'Generator 3 - Hz',
+        'Generator 3 - Amps A1', 'Generator 3 - Amps A2', 'Generator 3 - Amps A3',
+        'Generator 3 - Voltage V1.2', 'Generator 3 - Voltage V2.3', 'Generator 3 - Voltage V3.1',
+        'Generator 3 - RPM', 'Generator 3 - Fuel Consumption', 'Generator 3 - Load %',
+        'Generator 3 - Coolant Temp', 'Generator 3 - Oil Pressure', 'Generator 3 - Fuel Temp',
+        'Generator 3 - Fuel Pressure', 'Generator 3 - Sea Water Pressure', 'Generator 3 - Oil Temperature',
+        'Generator 3 - Boost Pressure', 'Generator 3 - Inlet Air Temp', 'Generator 3 - Engine Hours',
+        'Generator 3 - Battery Voltage',
+        'Port Engine - RPM', 'Port Engine - Fuel Pressure', 'Port Engine - Oil Temp',
+        'Port Engine - S/W Pressure', 'Port Engine - Boost Pressure', 'Port Engine - Scavenge Air',
+        'Port Engine - Left Exhaust', 'Port Engine - Right Exhaust', 'Port Engine - Ex O/B Surface',
+        'Port Engine - Fuel Differential', 'Port Engine - Oil Differential', 'Port Engine - Coolant Temp',
+        'Port Engine - Oil Pressure', 'Port Engine - Trans Gear Temp', 'Port Engine - Trans Oil Pressure',
+        'Port Engine - Fuel Consumption', 'Port Engine - Load %', 'Port Engine - Shaft Flow',
+        'Port Engine - Thrust Bearing Temp', 'Port Engine - Ex Sea Water Press',
+        'Starboard Engine - RPM', 'Starboard Engine - Fuel Pressure', 'Starboard Engine - Oil Temp',
+        'Starboard Engine - S/W Pressure', 'Starboard Engine - Boost Pressure', 'Starboard Engine - Scavenge Air',
+        'Starboard Engine - Left Exhaust', 'Starboard Engine - Right Exhaust', 'Starboard Engine - Ex O/B Surface',
+        'Starboard Engine - Fuel Differential', 'Starboard Engine - Oil Differential', 'Starboard Engine - Coolant Temp',
+        'Starboard Engine - Oil Pressure', 'Starboard Engine - Trans Gear Temp', 'Starboard Engine - Trans Oil Pressure',
+        'Starboard Engine - Fuel Consumption', 'Starboard Engine - Load %', 'Starboard Engine - Shaft Flow',
+        'Starboard Engine - Thrust Bearing Temp', 'Starboard Engine - Ex Sea Water Press',
+        'Other - Sea Water Temp', 'Other - Day Tank Temp'
+      ];
+      
+      const wsData = [headers];
+      
+      // Add each entry as a row
+      entries.forEach(entry => {
+        const row = [
+          entry.date || '',
+          entry.time || '',
+          entry.from || '',
+          entry.to || '',
+          entry.route || '',
+          entry['gen1.kw'] || '', entry['gen1.kvar'] || '', entry['gen1.hz'] || '',
+          entry['gen1.amps_a1'] || '', entry['gen1.amps_a2'] || '', entry['gen1.amps_a3'] || '',
+          entry['gen1.voltage_v1_2'] || '', entry['gen1.voltage_v2_3'] || '', entry['gen1.voltage_v3_1'] || '',
+          entry['gen1.rpm'] || '', entry['gen1.fuel_consumption_l_min'] || '', entry['gen1.load_pct'] || '',
+          entry['gen1.coolant_temp_°c'] || '', entry['gen1.oil_pressure_kpa'] || '', entry['gen1.fuel_temp_°c'] || '',
+          entry['gen1.fuel_pressure_kpa'] || '', entry['gen1.sea_water_pressure_kpa'] || '', entry['gen1.oil_temperature'] || '',
+          entry['gen1.boost_pressure_kpa'] || '', entry['gen1.inlet_air_temp_°c'] || '', entry['gen1.engine_hours'] || '',
+          entry['gen1.battery_voltage'] || '',
+          entry['gen2.kw'] || '', entry['gen2.kvar'] || '', entry['gen2.hz'] || '',
+          entry['gen2.amps_a1'] || '', entry['gen2.amps_a2'] || '', entry['gen2.amps_a3'] || '',
+          entry['gen2.voltage_v1_2'] || '', entry['gen2.voltage_v2_3'] || '', entry['gen2.voltage_v3_1'] || '',
+          entry['gen2.rpm'] || '', entry['gen2.fuel_consumption_l_min'] || '', entry['gen2.load_pct'] || '',
+          entry['gen2.coolant_temp_°c'] || '', entry['gen2.oil_pressure_kpa'] || '', entry['gen2.fuel_temp_°c'] || '',
+          entry['gen2.fuel_pressure_kpa'] || '', entry['gen2.sea_water_pressure_kpa'] || '', entry['gen2.oil_temperature'] || '',
+          entry['gen2.boost_pressure_kpa'] || '', entry['gen2.inlet_air_temp_°c'] || '', entry['gen2.engine_hours'] || '',
+          entry['gen2.battery_voltage'] || '',
+          entry['gen3.kw'] || '', entry['gen3.kvar'] || '', entry['gen3.hz'] || '',
+          entry['gen3.amps_a3'] || '', data['gen3.amps_a2'] || '', data['gen3.amps_a1'] || '',
+          entry['gen3.voltage_v1_2'] || '', entry['gen3.voltage_v2_3'] || '', entry['gen3.voltage_v3_1'] || '',
+          entry['gen3.rpm'] || '', entry['gen3.fuel_consumption_l_min'] || '', entry['gen3.load_pct'] || '',
+          entry['gen3.coolant_temp_°c'] || '', entry['gen3.oil_pressure_kpa'] || '', entry['gen3.fuel_temp_°c'] || '',
+          entry['gen3.fuel_pressure_kpa'] || '', entry['gen3.sea_water_pressure_kpa'] || '', entry['gen3.oil_temperature'] || '',
+          entry['gen3.boost_pressure_kpa'] || '', entry['gen3.inlet_air_temp_°c'] || '', entry['gen3.engine_hours'] || '',
+          entry['gen3.battery_voltage'] || '',
+          entry['port.rpm'] || '', entry['port.fuelPressure'] || '', entry['port.oilTemp'] || '',
+          entry['port.swPressure'] || '', entry['port.boostPressure'] || '', entry['port.scavengeAir'] || '',
+          entry['port.leftExhaust'] || '', entry['port.rightExhaust'] || '', entry['port.exSurface'] || '',
+          entry['port.fuelDiff'] || '', entry['port.oilDiff'] || '', entry['port.coolantTemp'] || '',
+          entry['port.oilPressure'] || '', entry['port.transGearTemp'] || '', entry['port.transOilPressure'] || '',
+          entry['port.fuelConsumption'] || '', entry['port.loadPct'] || '', entry['port.shaftFlow'] || '',
+          entry['port.thrustBearingTemp'] || '', entry['port.exSeaWaterPress'] || '',
+          entry['stbd.rpm'] || '', entry['stbd.fuelPressure'] || '', entry['stbd.oilTemp'] || '',
+          entry['stbd.swPressure'] || '', entry['stbd.boostPressure'] || '', entry['stbd.scavengeAir'] || '',
+          entry['stbd.leftExhaust'] || '', entry['stbd.rightExhaust'] || '', entry['stbd.scavengeAir'] || '',
+          entry['stbd.fuelDiff'] || '', entry['stbd.oilDiff'] || '', entry['stbd.coolantTemp'] || '',
+          entry['stbd.oilPressure'] || '', entry['stbd.transGearTemp'] || '', entry['stbd.transOilPressure'] || '',
+          entry['stbd.fuelConsumption'] || '', entry['stbd.loadPct'] || '', entry['stbd.shaftFlow'] || '',
+          entry['stbd.thrustBearingTemp'] || '', entry['stbd.exSeaWaterPress'] || '',
+          entry['other.seaWaterTemp'] || '', entry['other.dayTankTemp'] || ''
+        ];
+        wsData.push(row);
+      });
+      
+      // Create worksheet
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+      
+      // Add to workbook
+      XLSX.utils.book_append_sheet(wb, ws, 'Historical Data');
+      
+      // Auto-size columns
+      const colWidths = headers.map(h => Math.max(h.length, 15));
+      ws['!cols'] = colWidths.map(w => ({ width: w }));
+      
+      // Save file
+      XLSX.writeFile(wb, `er-log-historical-data-${new Date().toISOString().split('T')[0]}.xlsx`);
+      
+      toast(`Exported ${entries.length} entries to Excel`);
+    } catch (e) {
+      console.error('Export failed:', e);
+      toast('Export failed');
+    }
+  }
   // Wire OCR controls if present
   const filesEl = document.getElementById('ocrFiles');
   const runOcrBtn = document.getElementById('runOcrBtn');

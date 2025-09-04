@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
   </head>
   <body>
     <header class="app-header">
@@ -30,6 +31,7 @@
         <div class="card-header">
           <h2>Past Entries</h2>
           <div class="header-actions">
+            <button id="exportAllBtn" class="btn">Export All to Excel</button>
             <button id="clearAll" class="btn secondary">Clear All</button>
           </div>
         </div>
@@ -347,6 +349,141 @@
         // Main Engines: only show last clicked
         togglePortBtn.addEventListener('click', () => showOnly([chooserPortWrap, chooserStbdWrap], chooserPortWrap));
         toggleStbdBtn.addEventListener('click', () => showOnly([chooserPortWrap, chooserStbdWrap], chooserStbdWrap));
+      }
+
+      // Excel Export functionality
+      function exportHistoricalData() {
+        try {
+          const entries = JSON.parse(localStorage.getItem('erlog:entries') || '[]');
+          if (entries.length === 0) {
+            alert('No historical data to export');
+            return;
+          }
+          
+          // Create workbook and worksheet
+          const wb = XLSX.utils.book_new();
+          
+          // Headers
+          const headers = [
+            'Entry Date', 'Entry Time', 'From Port', 'To Port', 'Route/Notes',
+            'Generator 1 - kW', 'Generator 1 - kVAr', 'Generator 1 - Hz',
+            'Generator 1 - Amps A1', 'Generator 1 - Amps A2', 'Generator 1 - Amps A3',
+            'Generator 1 - Voltage V1.2', 'Generator 1 - Voltage V2.3', 'Generator 1 - Voltage V3.1',
+            'Generator 1 - RPM', 'Generator 1 - Fuel Consumption', 'Generator 1 - Load %',
+            'Generator 1 - Coolant Temp', 'Generator 1 - Oil Pressure', 'Generator 1 - Fuel Temp',
+            'Generator 1 - Fuel Pressure', 'Generator 1 - Sea Water Pressure', 'Generator 1 - Oil Temperature',
+            'Generator 1 - Boost Pressure', 'Generator 1 - Inlet Air Temp', 'Generator 1 - Engine Hours',
+            'Generator 1 - Battery Voltage',
+            'Generator 2 - kW', 'Generator 2 - kVAr', 'Generator 2 - Hz',
+            'Generator 2 - Amps A1', 'Generator 2 - Amps A2', 'Generator 2 - Amps A3',
+            'Generator 2 - Voltage V1.2', 'Generator 2 - Voltage V2.3', 'Generator 2 - Voltage V3.1',
+            'Generator 2 - RPM', 'Generator 2 - Fuel Consumption', 'Generator 2 - Load %',
+            'Generator 2 - Coolant Temp', 'Generator 2 - Oil Pressure', 'Generator 2 - Fuel Temp',
+            'Generator 2 - Fuel Pressure', 'Generator 2 - Sea Water Pressure', 'Generator 2 - Oil Temperature',
+            'Generator 2 - Boost Pressure', 'Generator 2 - Inlet Air Temp', 'Generator 2 - Engine Hours',
+            'Generator 2 - Battery Voltage',
+            'Generator 3 - kW', 'Generator 3 - kVAr', 'Generator 3 - Hz',
+            'Generator 3 - Amps A1', 'Generator 3 - Amps A2', 'Generator 3 - Amps A3',
+            'Generator 3 - Voltage V1.2', 'Generator 3 - Voltage V2.3', 'Generator 3 - Voltage V3.1',
+            'Generator 3 - RPM', 'Generator 3 - Fuel Consumption', 'Generator 3 - Load %',
+            'Generator 3 - Coolant Temp', 'Generator 3 - Oil Pressure', 'Generator 3 - Fuel Temp',
+            'Generator 3 - Fuel Pressure', 'Generator 3 - Sea Water Pressure', 'Generator 3 - Oil Temperature',
+            'Generator 3 - Boost Pressure', 'Generator 3 - Inlet Air Temp', 'Generator 3 - Engine Hours',
+            'Generator 3 - Battery Voltage',
+            'Port Engine - RPM', 'Port Engine - Fuel Pressure', 'Port Engine - Oil Temp',
+            'Port Engine - S/W Pressure', 'Port Engine - Boost Pressure', 'Port Engine - Scavenge Air',
+            'Port Engine - Left Exhaust', 'Port Engine - Right Exhaust', 'Port Engine - Ex O/B Surface',
+            'Port Engine - Fuel Differential', 'Port Engine - Oil Differential', 'Port Engine - Coolant Temp',
+            'Port Engine - Oil Pressure', 'Port Engine - Trans Gear Temp', 'Port Engine - Trans Oil Pressure',
+            'Port Engine - Fuel Consumption', 'Port Engine - Load %', 'Port Engine - Shaft Flow',
+            'Port Engine - Thrust Bearing Temp', 'Port Engine - Ex Sea Water Press',
+            'Starboard Engine - RPM', 'Starboard Engine - Fuel Pressure', 'Starboard Engine - Oil Temp',
+            'Starboard Engine - S/W Pressure', 'Starboard Engine - Boost Pressure', 'Starboard Engine - Scavenge Air',
+            'Starboard Engine - Left Exhaust', 'Starboard Engine - Right Exhaust', 'Starboard Engine - Ex O/B Surface',
+            'Starboard Engine - Fuel Differential', 'Starboard Engine - Oil Differential', 'Starboard Engine - Coolant Temp',
+            'Starboard Engine - Oil Pressure', 'Starboard Engine - Trans Gear Temp', 'Starboard Engine - Trans Oil Pressure',
+            'Starboard Engine - Fuel Consumption', 'Starboard Engine - Load %', 'Starboard Engine - Shaft Flow',
+            'Starboard Engine - Thrust Bearing Temp', 'Starboard Engine - Ex Sea Water Press',
+            'Other - Sea Water Temp', 'Other - Day Tank Temp'
+          ];
+          
+          const wsData = [headers];
+          
+          // Add each entry as a row
+          entries.forEach(entry => {
+            const row = [
+              entry.date || '',
+              entry.time || '',
+              entry.from || '',
+              entry.to || '',
+              entry.route || '',
+              entry['gen1.kw'] || '', entry['gen1.kvar'] || '', entry['gen1.hz'] || '',
+              entry['gen1.amps_a1'] || '', entry['gen1.amps_a2'] || '', entry['gen1.amps_a3'] || '',
+              entry['gen1.voltage_v1_2'] || '', entry['gen1.voltage_v2_3'] || '', entry['gen1.voltage_v3_1'] || '',
+              entry['gen1.rpm'] || '', entry['gen1.fuel_consumption_l_min'] || '', entry['gen1.load_pct'] || '',
+              entry['gen1.coolant_temp_°c'] || '', entry['gen1.oil_pressure_kpa'] || '', entry['gen1.fuel_temp_°c'] || '',
+              entry['gen1.fuel_pressure_kpa'] || '', entry['gen1.sea_water_pressure_kpa'] || '', entry['gen1.oil_temperature'] || '',
+              entry['gen1.boost_pressure_kpa'] || '', entry['gen1.inlet_air_temp_°c'] || '', entry['gen1.engine_hours'] || '',
+              entry['gen1.battery_voltage'] || '',
+              entry['gen2.kw'] || '', entry['gen2.kvar'] || '', entry['gen2.hz'] || '',
+              entry['gen2.amps_a1'] || '', entry['gen2.amps_a2'] || '', entry['gen2.amps_a3'] || '',
+              entry['gen2.voltage_v1_2'] || '', entry['gen2.voltage_v2_3'] || '', entry['gen2.voltage_v3_1'] || '',
+              entry['gen2.rpm'] || '', entry['gen2.fuel_consumption_l_min'] || '', entry['gen2.load_pct'] || '',
+              entry['gen2.coolant_temp_°c'] || '', entry['gen2.oil_pressure_kpa'] || '', entry['gen2.fuel_temp_°c'] || '',
+              entry['gen2.fuel_pressure_kpa'] || '', entry['gen2.sea_water_pressure_kpa'] || '', entry['gen2.oil_temperature'] || '',
+              entry['gen2.boost_pressure_kpa'] || '', entry['gen2.inlet_air_temp_°c'] || '', entry['gen2.engine_hours'] || '',
+              entry['gen2.battery_voltage'] || '',
+              entry['gen3.kw'] || '', entry['gen3.kvar'] || '', entry['gen3.hz'] || '',
+              entry['gen3.amps_a1'] || '', entry['gen3.amps_a2'] || '', entry['gen3.amps_a3'] || '',
+              entry['gen3.voltage_v1_2'] || '', entry['gen3.voltage_v2_3'] || '', entry['gen3.voltage_v3_1'] || '',
+              entry['gen3.rpm'] || '', entry['gen3.fuel_consumption_l_min'] || '', entry['gen3.load_pct'] || '',
+              entry['gen3.coolant_temp_°c'] || '', entry['gen3.oil_pressure_kpa'] || '', entry['gen3.fuel_temp_°c'] || '',
+              entry['gen3.fuel_pressure_kpa'] || '', entry['gen3.sea_water_pressure_kpa'] || '', entry['gen3.oil_temperature'] || '',
+              entry['gen3.boost_pressure_kpa'] || '', entry['gen3.inlet_air_temp_°c'] || '', entry['gen3.engine_hours'] || '',
+              entry['gen3.battery_voltage'] || '',
+              entry['port.rpm'] || '', entry['port.fuelPressure'] || '', entry['port.oilTemp'] || '',
+              entry['port.swPressure'] || '', entry['port.boostPressure'] || '', entry['port.scavengeAir'] || '',
+              entry['port.leftExhaust'] || '', entry['port.rightExhaust'] || '', entry['port.exSurface'] || '',
+              entry['port.fuelDiff'] || '', entry['port.olDiff'] || '', entry['port.coolantTemp'] || '',
+              entry['port.oilPressure'] || '', entry['port.transGearTemp'] || '', entry['port.transOilPressure'] || '',
+              entry['port.fuelConsumption'] || '', entry['port.loadPct'] || '', entry['port.shaftFlow'] || '',
+              entry['port.thrustBearingTemp'] || '', entry['port.exSeaWaterPress'] || '',
+              entry['stbd.rpm'] || '', entry['stbd.fuelPressure'] || '', entry['stbd.oilTemp'] || '',
+              entry['stbd.swPressure'] || '', entry['stbd.boostPressure'] || '', entry['stbd.scavengeAir'] || '',
+              entry['stbd.leftExhaust'] || '', entry['stbd.rightExhaust'] || '', entry['stbd.exSurface'] || '',
+              entry['stbd.fuelDiff'] || '', entry['stbd.oilDiff'] || '', entry['stbd.coolantTemp'] || '',
+              entry['stbd.oilPressure'] || '', entry['stbd.transGearTemp'] || '', entry['stbd.transOilPressure'] || '',
+              entry['stbd.fuelConsumption'] || '', entry['stbd.loadPct'] || '', entry['stbd.shaftFlow'] || '',
+              entry['stbd.thrustBearingTemp'] || '', entry['stbd.exSeaWaterPress'] || '',
+              entry['other.seaWaterTemp'] || '', entry['other.dayTankTemp'] || ''
+            ];
+            wsData.push(row);
+          });
+          
+          // Create worksheet
+          const ws = XLSX.utils.aoa_to_sheet(wsData);
+          
+          // Add to workbook
+          XLSX.utils.book_append_sheet(wb, ws, 'Historical Data');
+          
+          // Auto-size columns
+          const colWidths = headers.map(h => Math.max(h.length, 15));
+          ws['!cols'] = colWidths.map(w => ({ width: w }));
+          
+          // Save file
+          XLSX.writeFile(wb, `er-log-historical-data-${new Date().toISOString().split('T')[0]}.xlsx`);
+          
+          alert(`Exported ${entries.length} entries to Excel`);
+        } catch (e) {
+          console.error('Export failed:', e);
+          alert('Export failed');
+        }
+      }
+
+      // Wire export button
+      const exportAllBtn = document.getElementById('exportAllBtn');
+      if (exportAllBtn) {
+        exportAllBtn.addEventListener('click', exportHistoricalData);
       }
 
       clearAllBtn.addEventListener('click', () => {

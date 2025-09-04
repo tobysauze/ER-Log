@@ -63,6 +63,7 @@
 
         <div class="form-actions">
           <button type="reset" class="btn secondary">Reset Form</button>
+          <button type="button" id="exportCurrentBtn" class="btn">Export Current to Excel</button>
           <button type="submit" class="btn accent">Submit Entry</button>
         </div>
       </form>
@@ -119,6 +120,7 @@
     </template>
 
     <script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
     <script src="./sb-config.js?v=sb1"></script>
     <script src="./cloud.js?v=sb1"></script>
     <script src="./schema.js?v=sb1"></script>
