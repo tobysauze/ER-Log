@@ -381,7 +381,9 @@
           viewPassageBtn.className = 'btn secondary';
           viewPassageBtn.textContent = 'View Entries';
           viewPassageBtn.addEventListener('click', () => {
-            togglePassageDetails(card, passage);
+            // Navigate to dedicated passage page
+            const passageData = encodeURIComponent(JSON.stringify(passage));
+            window.location.href = `./passage.html?passage=${passageData}`;
           });
           
           actions.appendChild(exportPassageBtn);
@@ -412,70 +414,6 @@
         toggleStbdBtn.addEventListener('click', () => showOnly([chooserPortWrap, chooserStbdWrap], chooserStbdWrap));
       }
 
-      // Toggle passage details view
-      function togglePassageDetails(card, passage) {
-        const existingBody = card.querySelector('.passage-details');
-        if (existingBody) {
-          existingBody.remove();
-          return;
-        }
-        
-        const body = document.createElement('div');
-        body.className = 'card-body passage-details';
-        
-        passage.entries.forEach((entry, idx) => {
-          const entryDiv = document.createElement('div');
-          entryDiv.style.marginBottom = '12px';
-          entryDiv.style.padding = '8px';
-          entryDiv.style.border = '1px solid var(--border)';
-          entryDiv.style.borderRadius = '6px';
-          
-          const dt = (entry.__meta && entry.__meta.iso) || new Date().toISOString();
-          const dateStr = new Date(dt).toLocaleString();
-          entryDiv.innerHTML = `
-            <div style="font-weight: 600; margin-bottom: 4px;">Entry ${passage.entries.length - idx} — ${dateStr}</div>
-            <div style="font-size: 0.9em; color: var(--muted);">
-              ${entry.from || 'Unknown'} → ${entry.to || 'Unknown'} • ${entry.route || 'No route notes'}
-            </div>
-          `;
-          
-          const entryActions = document.createElement('div');
-          entryActions.style.marginTop = '8px';
-          entryActions.style.display = 'flex';
-          entryActions.style.gap = '8px';
-          
-          const loadBtn = document.createElement('button');
-          loadBtn.className = 'btn';
-          loadBtn.textContent = 'Load into Form';
-          loadBtn.style.fontSize = '0.8em';
-          loadBtn.addEventListener('click', () => {
-            localStorage.setItem('erlog:lastSubmit', JSON.stringify(entry));
-            window.location.href = './running.html?load=last&ts=' + Date.now();
-          });
-          
-          const exportBtn = document.createElement('button');
-          exportBtn.className = 'btn secondary';
-          exportBtn.textContent = 'Export Entry';
-          exportBtn.style.fontSize = '0.8em';
-          exportBtn.addEventListener('click', () => {
-            if (window.exportEntryWithData) {
-              const filename = `er-log-entry-${entry.date || 'entry'}-${entry.time || 'time'}`;
-              if (window.exportEntryWithData(entry, filename)) {
-                alert('Entry exported to Excel');
-              } else {
-                alert('Export failed');
-              }
-            }
-          });
-          
-          entryActions.appendChild(loadBtn);
-          entryActions.appendChild(exportBtn);
-          entryDiv.appendChild(entryActions);
-          body.appendChild(entryDiv);
-        });
-        
-        card.appendChild(body);
-      }
 
       // Export entire passage to Excel with all hourly readings
       function exportPassageToExcel(passage) {

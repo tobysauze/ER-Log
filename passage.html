@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mary-Jean II — Passage Details</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
+    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand">
+        <img src="./assets/mary-jean-ii.png" alt="Mary-Jean II Logo" onerror="this.closest('.brand').classList.add('no-image')">
+        <div class="brand-text">
+          <h1>Mary-Jean II</h1>
+          <p>Engine Room Log</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="./index.html" class="btn secondary">Home</a>
+        <a href="./running.html" class="btn secondary">ER Running Log</a>
+        <a href="./entries.html" class="btn secondary">Past Entries</a>
+      </div>
+    </header>
+
+    <main class="container wide">
+      <section class="card open">
+        <div class="card-header">
+          <h2 id="passageTitle">Passage Details</h2>
+          <div class="header-actions">
+            <button id="exportPassageBtn" class="btn">Export Passage to Excel</button>
+            <button id="backToEntriesBtn" class="btn secondary">Back to Passages</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="passageInfo" style="margin-bottom: 20px; padding: 16px; background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border);">
+            <div id="passageSummary"></div>
+          </div>
+          <div id="entriesList" class="grid cols-1"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <span>© <span id="year"></span> Mary-Jean II — Engine Room</span>
+    </footer>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <script src="./sb-config.js?v=sb1"></script>
+    <script src="./cloud.js?v=sb1"></script>
+    <script src="./schema.js?v=sb1"></script>
+    <script>
+      document.getElementById('year').textContent = new Date().getFullYear();
+
+      const entriesList = document.getElementById('entriesList');
+      const passageTitle = document.getElementById('passageTitle');
+      const passageSummary = document.getElementById('passageSummary');
+      const exportPassageBtn = document.getElementById('exportPassageBtn');
+      const backToEntriesBtn = document.getElementById('backToEntriesBtn');
+
+      let currentPassage = null;
+
+      // Get passage data from URL parameters
+      function getPassageFromURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const passageData = urlParams.get('passage');
+        if (passageData) {
+          try {
+            return JSON.parse(decodeURIComponent(passageData));
+          } catch (e) {
+            console.error('Failed to parse passage data:', e);
+            return null;
+          }
+        }
+        return null;
+      }
+
+      // Format date for display
+      function formatDate(dateStr) {
+        const date = new Date(dateStr);
+        return `${date.getDate()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getFullYear()).slice(-2)}`;
+      }
+
+      // Format time for display
+      function formatTime(timeStr) {
+        if (!timeStr) return '';
+        return timeStr.substring(0, 5); // HH:MM format
+      }
+
+      // Render passage information
+      function renderPassageInfo(passage) {
+        const title = `${passage.from} ${formatDate(passage.startDate)} - ${passage.to} ${formatDate(passage.endDate)}`;
+        passageTitle.textContent = title;
+        
+        const summary = `
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <div>
+              <strong>Route:</strong><br>
+              ${passage.from} → ${passage.to}
+            </div>
+            <div>
+              <strong>Duration:</strong><br>
+              ${formatDate(passage.startDate)} ${formatTime(passage.startTime)} - ${formatDate(passage.endDate)} ${formatTime(passage.endTime)}
+            </div>
+            <div>
+              <strong>Entries:</strong><br>
+              ${passage.entries.length} log entries
+            </div>
+            <div>
+              <strong>Days:</strong><br>
+              ${Math.ceil((new Date(passage.endDate) - new Date(passage.startDate)) / (1000 * 60 * 60 * 24)) + 1} days
+            </div>
+          </div>
+        `;
+        passageSummary.innerHTML = summary;
+      }
+
+      // Render individual entries
+      function renderEntries(passage) {
+        entriesList.innerHTML = '';
+        
+        if (passage.entries.length === 0) {
+          const empty = document.createElement('p');
+          empty.textContent = 'No entries found for this passage.';
+          empty.style.color = 'var(--muted)';
+          entriesList.appendChild(empty);
+          return;
+        }
+
+        // Sort entries by date/time (oldest first)
+        const sortedEntries = [...passage.entries].sort((a, b) => {
+          const dateA = new Date(a.__meta?.iso || a.date || 0);
+          const dateB = new Date(b.__meta?.iso || b.date || 0);
+          return dateA - dateB;
+        });
+
+        sortedEntries.forEach((entry, idx) => {
+          const card = document.createElement('div');
+          card.className = 'card subtle';
+          
+          const header = document.createElement('div');
+          header.className = 'card-header';
+          
+          const title = document.createElement('h3');
+          const dt = (entry.__meta && entry.__meta.iso) || new Date().toISOString();
+          const dateStr = new Date(dt).toLocaleString();
+          title.textContent = `Entry ${idx + 1} — ${dateStr}`;
+          header.appendChild(title);
+          
+          // Entry details
+          const details = document.createElement('div');
+          details.style.fontSize = '0.9em';
+          details.style.color = 'var(--muted)';
+          details.style.marginTop = '4px';
+          details.innerHTML = `
+            <div><strong>Route:</strong> ${entry.from || 'Unknown'} → ${entry.to || 'Unknown'}</div>
+            <div><strong>Notes:</strong> ${entry.route || 'No route notes'}</div>
+          `;
+          header.appendChild(details);
+          
+          const actions = document.createElement('div');
+          actions.className = 'header-actions';
+          
+          const loadBtn = document.createElement('button');
+          loadBtn.className = 'btn';
+          loadBtn.textContent = 'Load into Form';
+          loadBtn.addEventListener('click', () => {
+            localStorage.setItem('erlog:lastSubmit', JSON.stringify(entry));
+            window.location.href = './running.html?load=last&ts=' + Date.now();
+          });
+          
+          const viewBtn = document.createElement('button');
+          viewBtn.className = 'btn secondary';
+          viewBtn.textContent = 'View Data';
+          viewBtn.addEventListener('click', () => {
+            toggleEntryDetails(card, entry);
+          });
+          
+          const exportBtn = document.createElement('button');
+          exportBtn.className = 'btn secondary';
+          exportBtn.textContent = 'Export Entry';
+          exportBtn.addEventListener('click', () => {
+            if (window.exportEntryWithData) {
+              const filename = `er-log-entry-${entry.date || 'entry'}-${entry.time || 'time'}`;
+              if (window.exportEntryWithData(entry, filename)) {
+                alert('Entry exported to Excel');
+              } else {
+                alert('Export failed');
+              }
+            } else {
+              alert('Export function not available');
+            }
+          });
+          
+          actions.appendChild(loadBtn);
+          actions.appendChild(viewBtn);
+          actions.appendChild(exportBtn);
+          header.appendChild(actions);
+          card.appendChild(header);
+          entriesList.appendChild(card);
+        });
+      }
+
+      // Toggle entry details view
+      function toggleEntryDetails(card, entry) {
+        const existingBody = card.querySelector('.entry-details');
+        if (existingBody) {
+          existingBody.remove();
+          return;
+        }
+        
+        const body = document.createElement('div');
+        body.className = 'card-body entry-details';
+        
+        // Create a summary of key data points
+        const summary = document.createElement('div');
+        summary.style.marginBottom = '16px';
+        summary.innerHTML = '<h4>Key Readings Summary</h4>';
+        
+        const dataGrid = document.createElement('div');
+        dataGrid.style.display = 'grid';
+        dataGrid.style.gridTemplateColumns = 'repeat(auto-fit, minmax(250px, 1fr))';
+        dataGrid.style.gap = '16px';
+        dataGrid.style.marginBottom = '16px';
+        
+        // Helper function to get nested values
+        const getValue = (path) => {
+          const parts = path.split('.');
+          let value = entry;
+          for (const part of parts) {
+            if (value && typeof value === 'object') {
+              value = value[part];
+            } else {
+              return '';
+            }
+          }
+          return value || '';
+        };
+        
+        // Port Engine summary
+        const portData = document.createElement('div');
+        portData.style.padding = '12px';
+        portData.style.background = 'var(--card-bg)';
+        portData.style.borderRadius = '6px';
+        portData.style.border = '1px solid var(--border)';
+        portData.innerHTML = `
+          <h5 style="margin: 0 0 8px 0; color: var(--accent);">Port Engine</h5>
+          <div style="font-size: 0.9em;">
+            <div>RPM: ${getValue('port.rpm') || 'N/A'}</div>
+            <div>Oil Temp: ${getValue('port.oilTemp') || 'N/A'}°C</div>
+            <div>Oil Pressure: ${getValue('port.oilPressure') || 'N/A'} kPa</div>
+            <div>Fuel Pressure: ${getValue('port.fuelPressure') || 'N/A'} kPa</div>
+            <div>Coolant Temp: ${getValue('port.coolantTemp') || 'N/A'}°C</div>
+          </div>
+        `;
+        
+        // Starboard Engine summary
+        const stbdData = document.createElement('div');
+        stbdData.style.padding = '12px';
+        stbdData.style.background = 'var(--card-bg)';
+        stbdData.style.borderRadius = '6px';
+        stbdData.style.border = '1px solid var(--border)';
+        stbdData.innerHTML = `
+          <h5 style="margin: 0 0 8px 0; color: var(--accent);">Starboard Engine</h5>
+          <div style="font-size: 0.9em;">
+            <div>RPM: ${getValue('stbd.rpm') || 'N/A'}</div>
+            <div>Oil Temp: ${getValue('stbd.oilTemp') || 'N/A'}°C</div>
+            <div>Oil Pressure: ${getValue('stbd.oilPressure') || 'N/A'} kPa</div>
+            <div>Fuel Pressure: ${getValue('stbd.fuelPressure') || 'N/A'} kPa</div>
+            <div>Coolant Temp: ${getValue('stbd.coolantTemp') || 'N/A'}°C</div>
+          </div>
+        `;
+        
+        // Generators summary
+        const genData = document.createElement('div');
+        genData.style.padding = '12px';
+        genData.style.background = 'var(--card-bg)';
+        genData.style.borderRadius = '6px';
+        genData.style.border = '1px solid var(--border)';
+        
+        let genSummary = '<h5 style="margin: 0 0 8px 0; color: var(--accent);">Generators</h5><div style="font-size: 0.9em;">';
+        [1, 2, 3].forEach(id => {
+          const kw = getValue(`gen${id}.kw`);
+          const hz = getValue(`gen${id}.hz`);
+          const rpm = getValue(`gen${id}.rpm`);
+          if (kw || hz || rpm) {
+            genSummary += `<div><strong>Gen ${id}:</strong> ${kw || 'N/A'} kW, ${hz || 'N/A'} Hz, ${rpm || 'N/A'} RPM</div>`;
+          }
+        });
+        genSummary += '</div>';
+        genData.innerHTML = genSummary;
+        
+        // Other readings
+        const otherData = document.createElement('div');
+        otherData.style.padding = '12px';
+        otherData.style.background = 'var(--card-bg)';
+        otherData.style.borderRadius = '6px';
+        otherData.style.border = '1px solid var(--border)';
+        otherData.innerHTML = `
+          <h5 style="margin: 0 0 8px 0; color: var(--accent);">Other</h5>
+          <div style="font-size: 0.9em;">
+            <div>Sea Water Temp: ${getValue('other.seaWaterTemp') || 'N/A'}°C</div>
+            <div>Day Tank Temp: ${getValue('other.dayTankTemp') || 'N/A'}°C</div>
+          </div>
+        `;
+        
+        dataGrid.appendChild(portData);
+        dataGrid.appendChild(stbdData);
+        dataGrid.appendChild(genData);
+        dataGrid.appendChild(otherData);
+        
+        summary.appendChild(dataGrid);
+        body.appendChild(summary);
+        
+        // Full JSON view
+        const jsonSection = document.createElement('div');
+        jsonSection.innerHTML = '<h4>Full Entry Data (JSON)</h4>';
+        const pre = document.createElement('pre');
+        pre.textContent = JSON.stringify(entry, null, 2);
+        pre.style.whiteSpace = 'pre-wrap';
+        pre.style.fontSize = '0.8em';
+        pre.style.background = 'var(--bg)';
+        pre.style.padding = '12px';
+        pre.style.borderRadius = '6px';
+        pre.style.border = '1px solid var(--border)';
+        pre.style.overflow = 'auto';
+        pre.style.maxHeight = '400px';
+        jsonSection.appendChild(pre);
+        body.appendChild(jsonSection);
+        
+        card.appendChild(body);
+      }
+
+      // Export passage to Excel (same function as in entries.html)
+      function exportPassageToExcel(passage) {
+        try {
+          const wb = XLSX.utils.book_new();
+          
+          // Create worksheet with passage data
+          const wsData = [];
+          
+          // Header rows
+          wsData.push(['', '', '', 'Day 1', '', '', '', passage.startDate, '', '', `${passage.from} to ${passage.to}`]);
+          wsData.push(['', '', '', 'Time:', passage.startTime, 'From:', passage.from, 'To:', passage.to, '', '']);
+          wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
+          
+          // PORT main Engine header
+          wsData.push(['', 'PORT main Engine', '', '', '', '', '', '', '', '', '']);
+          wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
+          
+          // Create time columns based on entries
+          const timeColumns = passage.entries.map(entry => {
+            const dt = new Date(entry.__meta?.iso || entry.date || Date.now());
+            return dt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+          });
+          
+          // PORT main Engine parameters with time columns
+          const portParams = [
+            ['Engines Advanced (AMS)', 'RPM', 'RPM'],
+            ['', 'Fuel Pressure', 'kPa'],
+            ['', 'Oil Temperature', 'C'],
+            ['', 'S W Pressure', 'kPa'],
+            ['', 'Boost Pressure', 'kPa'],
+            ['', 'Scavange air', 'C'],
+            ['', 'Left Exhaust', 'C'],
+            ['', 'Right Exhaust', 'C'],
+            ['', 'Ex O/B Surface temp', 'C'],
+            ['', 'Fuel Differential', 'kPa'],
+            ['', 'Oil Differential', 'kPa'],
+            ['', 'Coolant Temp', 'C'],
+            ['', 'Oil Pressure', 'kPa'],
+            ['', 'Trans gear Temp', 'C'],
+            ['', 'Trans oil pressure', 'kPa'],
+            ['', 'Fuel consumption', 'l/h'],
+            ['', 'Load', '%'],
+            ['', 'Shaft Flow', 'l/min'],
+            ['', 'Thrust bearing Temp', 'C'],
+            ['', 'Ex Sea water Press', 'kPa']
+          ];
+          
+          // Add PORT parameters with data for each time
+          portParams.forEach((row, index) => {
+            const wsRow = [row[0], row[1], row[2]];
+            passage.entries.forEach(entry => {
+              const getValue = (path) => {
+                const parts = path.split('.');
+                let value = entry;
+                for (const part of parts) {
+                  if (value && typeof value === 'object') {
+                    value = value[part];
+                  } else {
+                    return '';
+                  }
+                }
+                return value || '';
+              };
+              
+              let fieldName = '';
+              if (index === 0) fieldName = 'port.rpm';
+              else if (index === 1) fieldName = 'port.fuelPressure';
+              else if (index === 2) fieldName = 'port.oilTemp';
+              else if (index === 3) fieldName = 'port.swPressure';
+              else if (index === 4) fieldName = 'port.boostPressure';
+              else if (index === 5) fieldName = 'port.scavengeAir';
+              else if (index === 6) fieldName = 'port.leftExhaust';
+              else if (index === 7) fieldName = 'port.rightExhaust';
+              else if (index === 8) fieldName = 'port.exSurface';
+              else if (index === 9) fieldName = 'port.fuelDiff';
+              else if (index === 10) fieldName = 'port.oilDiff';
+              else if (index === 11) fieldName = 'port.coolantTemp';
+              else if (index === 12) fieldName = 'port.oilPressure';
+              else if (index === 13) fieldName = 'port.transGearTemp';
+              else if (index === 14) fieldName = 'port.transOilPressure';
+              else if (index === 15) fieldName = 'port.fuelConsumption';
+              else if (index === 16) fieldName = 'port.loadPct';
+              else if (index === 17) fieldName = 'port.shaftFlow';
+              else if (index === 18) fieldName = 'port.thrustBearingTemp';
+              else if (index === 19) fieldName = 'port.exSeaWaterPress';
+              
+              wsRow.push(getValue(fieldName));
+            });
+            wsData.push(wsRow);
+          });
+          
+          // Add empty row
+          wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
+          
+          // STBD main Engine header
+          wsData.push(['', 'STBD main Engine', '', '', '', '', '', '', '', '', '']);
+          wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
+          
+          // STBD main Engine parameters with time columns
+          const stbdParams = [
+            ['Engines Advanced (AMS)', 'RPM', 'RPM'],
+            ['', 'Fuel Pressure', 'kPa'],
+            ['', 'Oil Temperature', 'C'],
+            ['', 'S W Pressure', 'kPa'],
+            ['', 'Boost Pressure', 'kPa'],
+            ['', 'Scavange air', 'C'],
+            ['', 'Left Exhaust', 'C'],
+            ['', 'Right Exhaust', 'C'],
+            ['', 'Ex O/B Surface temp', 'C'],
+            ['', 'Fuel Differential', 'kPa'],
+            ['', 'Oil Differential', 'kPa'],
+            ['', 'Coolant Temp', 'C'],
+            ['', 'Oil Pressure', 'kPa'],
+            ['', 'Trans gear Temp', 'C'],
+            ['', 'Trans oil pressure', 'kPa'],
+            ['', 'Fuel consumption', 'l/h'],
+            ['', 'Load', '%'],
+            ['', 'Shaft Flow', 'l/min'],
+            ['', 'Thrust bearing Temp', 'C'],
+            ['', 'Ex Sea water Press', 'kPa']
+          ];
+          
+          // Add STBD parameters with data for each time
+          stbdParams.forEach((row, index) => {
+            const wsRow = [row[0], row[1], row[2]];
+            passage.entries.forEach(entry => {
+              const getValue = (path) => {
+                const parts = path.split('.');
+                let value = entry;
+                for (const part of parts) {
+                  if (value && typeof value === 'object') {
+                    value = value[part];
+                  } else {
+                    return '';
+                  }
+                }
+                return value || '';
+              };
+              
+              let fieldName = '';
+              if (index === 0) fieldName = 'stbd.rpm';
+              else if (index === 1) fieldName = 'stbd.fuelPressure';
+              else if (index === 2) fieldName = 'stbd.oilTemp';
+              else if (index === 3) fieldName = 'stbd.swPressure';
+              else if (index === 4) fieldName = 'stbd.boostPressure';
+              else if (index === 5) fieldName = 'stbd.scavengeAir';
+              else if (index === 6) fieldName = 'stbd.leftExhaust';
+              else if (index === 7) fieldName = 'stbd.rightExhaust';
+              else if (index === 8) fieldName = 'stbd.exSurface';
+              else if (index === 9) fieldName = 'stbd.fuelDiff';
+              else if (index === 10) fieldName = 'stbd.oilDiff';
+              else if (index === 11) fieldName = 'stbd.coolantTemp';
+              else if (index === 12) fieldName = 'stbd.oilPressure';
+              else if (index === 13) fieldName = 'stbd.transGearTemp';
+              else if (index === 14) fieldName = 'stbd.transOilPressure';
+              else if (index === 15) fieldName = 'stbd.fuelConsumption';
+              else if (index === 16) fieldName = 'stbd.loadPct';
+              else if (index === 17) fieldName = 'stbd.shaftFlow';
+              else if (index === 18) fieldName = 'stbd.thrustBearingTemp';
+              else if (index === 19) fieldName = 'stbd.exSeaWaterPress';
+              
+              wsRow.push(getValue(fieldName));
+            });
+            wsData.push(wsRow);
+          });
+          
+          // Create worksheet
+          const ws = XLSX.utils.aoa_to_sheet(wsData);
+          
+          // Add to workbook
+          XLSX.utils.book_append_sheet(wb, ws, 'Passage Data');
+          
+          // Set column widths
+          const colWidths = [20, 25, 15, ...timeColumns.map(() => 15)];
+          ws['!cols'] = colWidths.map(w => ({ width: w }));
+          
+          // Save file
+          const filename = `passage-${passage.from}-${passage.to}-${passage.startDate}`;
+          XLSX.writeFile(wb, `${filename}-${new Date().toISOString().split('T')[0]}.xlsx`);
+          
+          alert(`Passage exported to Excel: ${passage.entries.length} entries`);
+        } catch (e) {
+          console.error('Passage export failed:', e);
+          alert('Export failed');
+        }
+      }
+
+      // Initialize page
+      function init() {
+        currentPassage = getPassageFromURL();
+        
+        if (!currentPassage) {
+          alert('No passage data found. Redirecting to entries page.');
+          window.location.href = './entries.html';
+          return;
+        }
+        
+        renderPassageInfo(currentPassage);
+        renderEntries(currentPassage);
+        
+        // Event listeners
+        exportPassageBtn.addEventListener('click', () => {
+          exportPassageToExcel(currentPassage);
+        });
+        
+        backToEntriesBtn.addEventListener('click', () => {
+          window.location.href = './entries.html';
+        });
+      }
+
+      // Start the app
+      init();
+    </script>
+  </body>
+</html>
