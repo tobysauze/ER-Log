@@ -197,13 +197,16 @@
     // Row 1: Header with Day, Date, Notes
     wsData.push(['', '', '', 'Day 1', '', '', '', data.date || '6-Feb-25', '', '', 'Notes']);
     
-    // Row 2: Empty
+    // Row 2: Additional header info - Time, From Port, To Port
+    wsData.push(['', '', '', 'Time:', data.time || '', 'From:', data.from || '', 'To:', data.to || '', '', '']);
+    
+    // Row 3: Empty
     wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
     
-    // Row 3: PORT main Engine header
+    // Row 4: PORT main Engine header
     wsData.push(['', 'PORT main Engine', '', '', '', '', '', '', '', '', '']);
     
-    // Row 4: Empty
+    // Row 5: Empty
     wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
     
     // PORT main Engine parameters (rows 5-24)
@@ -422,16 +425,19 @@
       // Row 1: Header with Day, Date, Notes
       wsData.push(['', '', '', 'Day 1', '', '', '', getValue('date') || '6-Feb-25', '', '', getValue('route') || 'Notes']);
       
-      // Row 2: Empty
+      // Row 2: Additional header info - Time, From Port, To Port
+      wsData.push(['', '', '', 'Time:', getValue('time') || '', 'From:', getValue('from') || '', 'To:', getValue('to') || '', '', '']);
+      
+      // Row 3: Empty
       wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
       
-      // Row 3: PORT main Engine header
+      // Row 4: PORT main Engine header
       wsData.push(['', 'PORT main Engine', '', '', '', '', '', '', '', '', '']);
       
-      // Row 4: Empty
+      // Row 5: Empty
       wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
       
-      // PORT main Engine parameters (rows 5-24) with data
+      // PORT main Engine parameters (rows 6-25) with data
       const portParams = [
         ['Engines Advanced (AMS)', 'RPM', 'RPM', getValue('port.rpm')],
         ['', 'Fuel Pressure', 'kPa', getValue('port.fuelPressure')],
@@ -465,16 +471,16 @@
         wsData.push(wsRow);
       });
       
-      // Row 25: Empty
+      // Row 26: Empty
       wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
       
-      // Row 26: STBD main Engine header
+      // Row 27: STBD main Engine header
       wsData.push(['', 'STBD main Engine', '', '', '', '', '', '', '', '', '']);
       
-      // Row 27: Empty
+      // Row 28: Empty
       wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
       
-      // STBD main Engine parameters (rows 28-47) with data
+      // STBD main Engine parameters (rows 29-48) with data
       const stbdParams = [
         ['Engines Advanced (AMS)', 'RPM', 'RPM', getValue('stbd.rpm')],
         ['', 'Fuel Pressure', 'kPa', getValue('stbd.fuelPressure')],
@@ -508,16 +514,16 @@
         wsData.push(wsRow);
       });
       
-      // Row 48: Empty
+      // Row 49: Empty
       wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
       
-      // Row 49: Online Generator header
+      // Row 50: Online Generator header
       wsData.push(['', 'Online Generator', '', '', '', '', '', '', '', '', '']);
       
-      // Row 50: Empty
+      // Row 51: Empty
       wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
       
-      // Online Generator parameters (rows 51-67) with data
+      // Online Generator parameters (rows 52-68) with data
       const genParams = [
         ['Genset Electrical', 'DG1/DG2/DG3', '#', getValue('gen1.running') || getValue('gen2.running') || getValue('gen3.running') || ''],
         ['', 'kW', 'kW', getValue('gen1.kw') || getValue('gen2.kw') || getValue('gen3.kw') || ''],
