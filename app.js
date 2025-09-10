@@ -398,6 +398,21 @@
   function exportEntryWithData(entry, filename = 'er-log-entry') {
     try {
       console.log('Exporting entry data:', entry);
+      
+      // Helper function to get nested values from the entry object
+      const getValue = (path) => {
+        const parts = path.split('.');
+        let value = entry;
+        for (const part of parts) {
+          if (value && typeof value === 'object') {
+            value = value[part];
+          } else {
+            return '';
+          }
+        }
+        return value || '';
+      };
+      
       // Create workbook and worksheet
       const wb = XLSX.utils.book_new();
       
@@ -405,7 +420,7 @@
       const wsData = [];
       
       // Row 1: Header with Day, Date, Notes
-      wsData.push(['', '', '', 'Day 1', '', '', '', entry.date || '6-Feb-25', '', '', entry.route || 'Notes']);
+      wsData.push(['', '', '', 'Day 1', '', '', '', getValue('date') || '6-Feb-25', '', '', getValue('route') || 'Notes']);
       
       // Row 2: Empty
       wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
@@ -418,26 +433,26 @@
       
       // PORT main Engine parameters (rows 5-24) with data
       const portParams = [
-        ['Engines Advanced (AMS)', 'RPM', 'RPM', entry['port.rpm'] || ''],
-        ['', 'Fuel Pressure', 'kPa', entry['port.fuelPressure'] || ''],
-        ['', 'Oil Temperature', 'C', entry['port.oilTemp'] || ''],
-        ['', 'S W Pressure', 'kPa', entry['port.swPressure'] || ''],
-        ['', 'Boost Pressure', 'kPa', entry['port.boostPressure'] || ''],
-        ['', 'Scavange air', 'C', entry['port.scavengeAir'] || ''],
-        ['', 'Left Exhaust', 'C', entry['port.leftExhaust'] || ''],
-        ['', 'Right Exhaust', 'C', entry['port.rightExhaust'] || ''],
-        ['', 'Ex O/B Surface temp', 'C', entry['port.exSurface'] || ''],
-        ['', 'Fuel Differential', 'kPa', entry['port.fuelDiff'] || ''],
-        ['', 'Oil Differential', 'kPa', entry['port.oilDiff'] || ''],
-        ['', 'Coolant Temp', 'C', entry['port.coolantTemp'] || ''],
-        ['', 'Oil Pressure', 'kPa', entry['port.oilPressure'] || ''],
-        ['', 'Trans gear Temp', 'C', entry['port.transGearTemp'] || ''],
-        ['', 'Trans oil pressure', 'kPa', entry['port.transOilPressure'] || ''],
-        ['', 'Fuel consumption', 'l/h', entry['port.fuelConsumption'] || ''],
-        ['', 'Load', '%', entry['port.loadPct'] || ''],
-        ['', 'Shaft Flow', 'l/min', entry['port.shaftFlow'] || ''],
-        ['', 'Thrust bearing Temp', 'C', entry['port.thrustBearingTemp'] || ''],
-        ['', 'Ex Sea water Press', 'kPa', entry['port.exSeaWaterPress'] || '']
+        ['Engines Advanced (AMS)', 'RPM', 'RPM', getValue('port.rpm')],
+        ['', 'Fuel Pressure', 'kPa', getValue('port.fuelPressure')],
+        ['', 'Oil Temperature', 'C', getValue('port.oilTemp')],
+        ['', 'S W Pressure', 'kPa', getValue('port.swPressure')],
+        ['', 'Boost Pressure', 'kPa', getValue('port.boostPressure')],
+        ['', 'Scavange air', 'C', getValue('port.scavengeAir')],
+        ['', 'Left Exhaust', 'C', getValue('port.leftExhaust')],
+        ['', 'Right Exhaust', 'C', getValue('port.rightExhaust')],
+        ['', 'Ex O/B Surface temp', 'C', getValue('port.exSurface')],
+        ['', 'Fuel Differential', 'kPa', getValue('port.fuelDiff')],
+        ['', 'Oil Differential', 'kPa', getValue('port.oilDiff')],
+        ['', 'Coolant Temp', 'C', getValue('port.coolantTemp')],
+        ['', 'Oil Pressure', 'kPa', getValue('port.oilPressure')],
+        ['', 'Trans gear Temp', 'C', getValue('port.transGearTemp')],
+        ['', 'Trans oil pressure', 'kPa', getValue('port.transOilPressure')],
+        ['', 'Fuel consumption', 'l/h', getValue('port.fuelConsumption')],
+        ['', 'Load', '%', getValue('port.loadPct')],
+        ['', 'Shaft Flow', 'l/min', getValue('port.shaftFlow')],
+        ['', 'Thrust bearing Temp', 'C', getValue('port.thrustBearingTemp')],
+        ['', 'Ex Sea water Press', 'kPa', getValue('port.exSeaWaterPress')]
       ];
       
       // Add PORT parameters with data
@@ -461,26 +476,26 @@
       
       // STBD main Engine parameters (rows 28-47) with data
       const stbdParams = [
-        ['Engines Advanced (AMS)', 'RPM', 'RPM', entry['stbd.rpm'] || ''],
-        ['', 'Fuel Pressure', 'kPa', entry['stbd.fuelPressure'] || ''],
-        ['', 'Oil Temperature', 'C', entry['stbd.oilTemp'] || ''],
-        ['', 'S W Pressure', 'kPa', entry['stbd.swPressure'] || ''],
-        ['', 'Boost Pressure', 'kPa', entry['stbd.boostPressure'] || ''],
-        ['', 'Scavange air', 'C', entry['stbd.scavengeAir'] || ''],
-        ['', 'Left Exhaust', 'C', entry['stbd.leftExhaust'] || ''],
-        ['', 'Right Exhaust', 'C', entry['stbd.rightExhaust'] || ''],
-        ['', 'Ex O/B Surface temp', 'C', entry['stbd.exSurface'] || ''],
-        ['', 'Fuel Differential', 'kPa', entry['stbd.fuelDiff'] || ''],
-        ['', 'Oil Differential', 'kPa', entry['stbd.oilDiff'] || ''],
-        ['', 'Coolant Temp', 'C', entry['stbd.coolantTemp'] || ''],
-        ['', 'Oil Pressure', 'kPa', entry['stbd.oilPressure'] || ''],
-        ['', 'Trans gear Temp', 'C', entry['stbd.transGearTemp'] || ''],
-        ['', 'Trans oil pressure', 'kPa', entry['stbd.transOilPressure'] || ''],
-        ['', 'Fuel consumption', 'l/h', entry['stbd.fuelConsumption'] || ''],
-        ['', 'Load', '%', entry['stbd.loadPct'] || ''],
-        ['', 'Shaft Flow', 'l/min', entry['stbd.shaftFlow'] || ''],
-        ['', 'Thrust bearing Temp', 'C', entry['stbd.thrustBearingTemp'] || ''],
-        ['', 'Ex Sea water Press', 'kPa', entry['stbd.exSeaWaterPress'] || '']
+        ['Engines Advanced (AMS)', 'RPM', 'RPM', getValue('stbd.rpm')],
+        ['', 'Fuel Pressure', 'kPa', getValue('stbd.fuelPressure')],
+        ['', 'Oil Temperature', 'C', getValue('stbd.oilTemp')],
+        ['', 'S W Pressure', 'kPa', getValue('stbd.swPressure')],
+        ['', 'Boost Pressure', 'kPa', getValue('stbd.boostPressure')],
+        ['', 'Scavange air', 'C', getValue('stbd.scavengeAir')],
+        ['', 'Left Exhaust', 'C', getValue('stbd.leftExhaust')],
+        ['', 'Right Exhaust', 'C', getValue('stbd.rightExhaust')],
+        ['', 'Ex O/B Surface temp', 'C', getValue('stbd.exSurface')],
+        ['', 'Fuel Differential', 'kPa', getValue('stbd.fuelDiff')],
+        ['', 'Oil Differential', 'kPa', getValue('stbd.oilDiff')],
+        ['', 'Coolant Temp', 'C', getValue('stbd.coolantTemp')],
+        ['', 'Oil Pressure', 'kPa', getValue('stbd.oilPressure')],
+        ['', 'Trans gear Temp', 'C', getValue('stbd.transGearTemp')],
+        ['', 'Trans oil pressure', 'kPa', getValue('stbd.transOilPressure')],
+        ['', 'Fuel consumption', 'l/h', getValue('stbd.fuelConsumption')],
+        ['', 'Load', '%', getValue('stbd.loadPct')],
+        ['', 'Shaft Flow', 'l/min', getValue('stbd.shaftFlow')],
+        ['', 'Thrust bearing Temp', 'C', getValue('stbd.thrustBearingTemp')],
+        ['', 'Ex Sea water Press', 'kPa', getValue('stbd.exSeaWaterPress')]
       ];
       
       // Add STBD parameters with data
@@ -504,39 +519,39 @@
       
       // Online Generator parameters (rows 51-67) with data
       const genParams = [
-        ['Genset Electrical', 'DG1/DG2/DG3', '#', entry['gen1.running'] || entry['gen2.running'] || entry['gen3.running'] || ''],
-        ['', 'kW', 'kW', entry['gen1.kw'] || entry['gen2.kw'] || entry['gen3.kw'] || ''],
-        ['', 'kVAr', 'kVAr', entry['gen1.kvar'] || entry['gen2.kvar'] || entry['gen3.kvar'] || ''],
-        ['', 'Hz', 'Hz', entry['gen1.hz'] || entry['gen2.hz'] || entry['gen3.hz'] || ''],
-        ['', 'Amps', 'A', entry['gen1.amps_a1'] || entry['gen2.amps_a1'] || entry['gen3.amps_a1'] || ''],
-        ['', 'Voltage', 'V', entry['gen1.voltage_v1_2'] || entry['gen2.voltage_v1_2'] || entry['gen3.voltage_v1_2'] || ''],
-        ['', 'RPM', 'RPM', entry['gen1.rpm'] || entry['gen2.rpm'] || entry['gen3.rpm'] || ''],
-        ['', 'Fuel consumption', 'l/min', entry['gen1.fuel_consumption_l_min'] || entry['gen2.fuel_consumption_l_min'] || entry['gen3.fuel_consumption_l_min'] || '']
+        ['Genset Electrical', 'DG1/DG2/DG3', '#', getValue('gen1.running') || getValue('gen2.running') || getValue('gen3.running') || ''],
+        ['', 'kW', 'kW', getValue('gen1.kw') || getValue('gen2.kw') || getValue('gen3.kw') || ''],
+        ['', 'kVAr', 'kVAr', getValue('gen1.kvar') || getValue('gen2.kvar') || getValue('gen3.kvar') || ''],
+        ['', 'Hz', 'Hz', getValue('gen1.hz') || getValue('gen2.hz') || getValue('gen3.hz') || ''],
+        ['', 'Amps', 'A', getValue('gen1.amps_a1') || getValue('gen2.amps_a1') || getValue('gen3.amps_a1') || ''],
+        ['', 'Voltage', 'V', getValue('gen1.voltage_v1_2') || getValue('gen2.voltage_v1_2') || getValue('gen3.voltage_v1_2') || ''],
+        ['', 'RPM', 'RPM', getValue('gen1.rpm') || getValue('gen2.rpm') || getValue('gen3.rpm') || ''],
+        ['', 'Fuel consumption', 'l/min', getValue('gen1.fuel_consumption_l_min') || getValue('gen2.fuel_consumption_l_min') || getValue('gen3.fuel_consumption_l_min') || '']
       ];
       
       // Genset Mechanical section (rows 68-85) with data
       const genMechParams = [
-        ['Genset Mechanical', 'Load', '%', entry['gen1.load_pct'] || entry['gen2.load_pct'] || entry['gen3.load_pct'] || ''],
-        ['', 'Coolants Temp', 'C', entry['gen1.coolant_temp_°c'] || entry['gen2.coolant_temp_°c'] || entry['gen3.coolant_temp_°c'] || ''],
-        ['', 'oil pressure', 'kPa', entry['gen1.oil_pressure_kpa'] || entry['gen2.oil_pressure_kpa'] || entry['gen3.oil_pressure_kpa'] || ''],
-        ['', 'Fuel Temp', 'C', entry['gen1.fuel_temp_°c'] || entry['gen2.fuel_temp_°c'] || entry['gen3.fuel_temp_°c'] || ''],
-        ['', 'Fuel Pressure', 'kPa', entry['gen1.fuel_pressure_kpa'] || entry['gen2.fuel_pressure_kpa'] || entry['gen3.fuel_pressure_kpa'] || ''],
-        ['', 'Sea water Pressure', 'kPa', entry['gen1.sea_water_pressure_kpa'] || entry['gen2.sea_water_pressure_kpa'] || entry['gen3.sea_water_pressure_kpa'] || ''],
-        ['', 'Oil Temperature', 'C', entry['gen1.oil_temperature'] || entry['gen2.oil_temperature'] || entry['gen3.oil_temperature'] || ''],
-        ['', 'Boost Pressure', 'kPa', entry['gen1.boost_pressure_kpa'] || entry['gen2.boost_pressure_kpa'] || entry['gen3.boost_pressure_kpa'] || ''],
-        ['', 'Inlet Air Temp', 'C', entry['gen1.inlet_air_temp_°c'] || entry['gen2.inlet_air_temp_°c'] || entry['gen3.inlet_air_temp_°c'] || '']
+        ['Genset Mechanical', 'Load', '%', getValue('gen1.load_pct') || getValue('gen2.load_pct') || getValue('gen3.load_pct') || ''],
+        ['', 'Coolants Temp', 'C', getValue('gen1.coolant_temp_°c') || getValue('gen2.coolant_temp_°c') || getValue('gen3.coolant_temp_°c') || ''],
+        ['', 'oil pressure', 'kPa', getValue('gen1.oil_pressure_kpa') || getValue('gen2.oil_pressure_kpa') || getValue('gen3.oil_pressure_kpa') || ''],
+        ['', 'Fuel Temp', 'C', getValue('gen1.fuel_temp_°c') || getValue('gen2.fuel_temp_°c') || getValue('gen3.fuel_temp_°c') || ''],
+        ['', 'Fuel Pressure', 'kPa', getValue('gen1.fuel_pressure_kpa') || getValue('gen2.fuel_pressure_kpa') || getValue('gen3.fuel_pressure_kpa') || ''],
+        ['', 'Sea water Pressure', 'kPa', getValue('gen1.sea_water_pressure_kpa') || getValue('gen2.sea_water_pressure_kpa') || getValue('gen3.sea_water_pressure_kpa') || ''],
+        ['', 'Oil Temperature', 'C', getValue('gen1.oil_temperature') || getValue('gen2.oil_temperature') || getValue('gen3.oil_temperature') || ''],
+        ['', 'Boost Pressure', 'kPa', getValue('gen1.boost_pressure_kpa') || getValue('gen2.boost_pressure_kpa') || getValue('gen3.boost_pressure_kpa') || ''],
+        ['', 'Inlet Air Temp', 'C', getValue('gen1.inlet_air_temp_°c') || getValue('gen2.inlet_air_temp_°c') || getValue('gen3.inlet_air_temp_°c') || '']
       ];
       
       // Local section (rows 86-87) with data
       const localParams = [
-        ['Local', 'Visual in enclosure', 'ü', entry['gen1.visual_in_enclosure'] || entry['gen2.visual_in_enclosure'] || entry['gen3.visual_in_enclosure'] || ''],
-        ['', 'Fans Operating', 'ü', entry['gen1.fans_operating'] || entry['gen2.fans_operating'] || entry['gen3.fans_operating'] || '']
+        ['Local', 'Visual in enclosure', 'ü', getValue('gen1.visual_in_enclosure') || getValue('gen2.visual_in_enclosure') || getValue('gen3.visual_in_enclosure') || ''],
+        ['', 'Fans Operating', 'ü', getValue('gen1.fans_operating') || getValue('gen2.fans_operating') || getValue('gen3.fans_operating') || '']
       ];
       
       // Other section (rows 88-89) with data
       const otherParams = [
-        ['Local', 'Sea water Temp', 'C', entry['other.seaWaterTemp'] || ''],
-        ['', 'Day Tank temp', 'C', entry['other.dayTankTemp'] || '']
+        ['Local', 'Sea water Temp', 'C', getValue('other.seaWaterTemp') || ''],
+        ['', 'Day Tank temp', 'C', getValue('other.dayTankTemp') || '']
       ];
       
       // Add Generator parameters with data
@@ -670,53 +685,67 @@
       
       const wsData = [headers];
       
+      // Helper function to get nested values from the entry object
+      const getValue = (path) => {
+        const parts = path.split('.');
+        let value = entry;
+        for (const part of parts) {
+          if (value && typeof value === 'object') {
+            value = value[part];
+          } else {
+            return '';
+          }
+        }
+        return value || '';
+      };
+
       // Add each entry as a row
       entries.forEach(entry => {
         const row = [
-          entry.date || '',
-          entry.time || '',
-          entry.from || '',
-          entry.to || '',
-          entry.route || '',
-          entry['gen1.kw'] || '', entry['gen1.kvar'] || '', entry['gen1.hz'] || '',
-          entry['gen1.amps_a1'] || '', entry['gen1.amps_a2'] || '', entry['gen1.amps_a3'] || '',
-          entry['gen1.voltage_v1_2'] || '', entry['gen1.voltage_v2_3'] || '', entry['gen1.voltage_v3_1'] || '',
-          entry['gen1.rpm'] || '', entry['gen1.fuel_consumption_l_min'] || '', entry['gen1.load_pct'] || '',
-          entry['gen1.coolant_temp_°c'] || '', entry['gen1.oil_pressure_kpa'] || '', entry['gen1.fuel_temp_°c'] || '',
-          entry['gen1.fuel_pressure_kpa'] || '', entry['gen1.sea_water_pressure_kpa'] || '', entry['gen1.oil_temperature'] || '',
-          entry['gen1.boost_pressure_kpa'] || '', entry['gen1.inlet_air_temp_°c'] || '', entry['gen1.engine_hours'] || '',
-          entry['gen1.battery_voltage'] || '',
-          entry['gen2.kw'] || '', entry['gen2.kvar'] || '', entry['gen2.hz'] || '',
-          entry['gen2.amps_a1'] || '', entry['gen2.amps_a2'] || '', entry['gen2.amps_a3'] || '',
-          entry['gen2.voltage_v1_2'] || '', entry['gen2.voltage_v2_3'] || '', entry['gen2.voltage_v3_1'] || '',
-          entry['gen2.rpm'] || '', entry['gen2.fuel_consumption_l_min'] || '', entry['gen2.load_pct'] || '',
-          entry['gen2.coolant_temp_°c'] || '', entry['gen2.oil_pressure_kpa'] || '', entry['gen2.fuel_temp_°c'] || '',
-          entry['gen2.fuel_pressure_kpa'] || '', entry['gen2.sea_water_pressure_kpa'] || '', entry['gen2.oil_temperature'] || '',
-          entry['gen2.boost_pressure_kpa'] || '', entry['gen2.inlet_air_temp_°c'] || '', entry['gen2.engine_hours'] || '',
-          entry['gen2.battery_voltage'] || '',
-          entry['gen3.kw'] || '', entry['gen3.kvar'] || '', entry['gen3.hz'] || '',
-          entry['gen3.amps_a3'] || '', data['gen3.amps_a2'] || '', data['gen3.amps_a1'] || '',
-          entry['gen3.voltage_v1_2'] || '', entry['gen3.voltage_v2_3'] || '', entry['gen3.voltage_v3_1'] || '',
-          entry['gen3.rpm'] || '', entry['gen3.fuel_consumption_l_min'] || '', entry['gen3.load_pct'] || '',
-          entry['gen3.coolant_temp_°c'] || '', entry['gen3.oil_pressure_kpa'] || '', entry['gen3.fuel_temp_°c'] || '',
-          entry['gen3.fuel_pressure_kpa'] || '', entry['gen3.sea_water_pressure_kpa'] || '', entry['gen3.oil_temperature'] || '',
-          entry['gen3.boost_pressure_kpa'] || '', entry['gen3.inlet_air_temp_°c'] || '', entry['gen3.engine_hours'] || '',
-          entry['gen3.battery_voltage'] || '',
-          entry['port.rpm'] || '', entry['port.fuelPressure'] || '', entry['port.oilTemp'] || '',
-          entry['port.swPressure'] || '', entry['port.boostPressure'] || '', entry['port.scavengeAir'] || '',
-          entry['port.leftExhaust'] || '', entry['port.rightExhaust'] || '', entry['port.exSurface'] || '',
-          entry['port.fuelDiff'] || '', entry['port.oilDiff'] || '', entry['port.coolantTemp'] || '',
-          entry['port.oilPressure'] || '', entry['port.transGearTemp'] || '', entry['port.transOilPressure'] || '',
-          entry['port.fuelConsumption'] || '', entry['port.loadPct'] || '', entry['port.shaftFlow'] || '',
-          entry['port.thrustBearingTemp'] || '', entry['port.exSeaWaterPress'] || '',
-          entry['stbd.rpm'] || '', entry['stbd.fuelPressure'] || '', entry['stbd.oilTemp'] || '',
-          entry['stbd.swPressure'] || '', entry['stbd.boostPressure'] || '', entry['stbd.scavengeAir'] || '',
-          entry['stbd.leftExhaust'] || '', entry['stbd.rightExhaust'] || '', entry['stbd.scavengeAir'] || '',
-          entry['stbd.fuelDiff'] || '', entry['stbd.oilDiff'] || '', entry['stbd.coolantTemp'] || '',
-          entry['stbd.oilPressure'] || '', entry['stbd.transGearTemp'] || '', entry['stbd.transOilPressure'] || '',
-          entry['stbd.fuelConsumption'] || '', entry['stbd.loadPct'] || '', entry['stbd.shaftFlow'] || '',
-          entry['stbd.thrustBearingTemp'] || '', entry['stbd.exSeaWaterPress'] || '',
-          entry['other.seaWaterTemp'] || '', entry['other.dayTankTemp'] || ''
+          getValue('date'),
+          getValue('time'),
+          getValue('from'),
+          getValue('to'),
+          getValue('route'),
+          getValue('gen1.kw'), getValue('gen1.kvar'), getValue('gen1.hz'),
+          getValue('gen1.amps_a1'), getValue('gen1.amps_a2'), getValue('gen1.amps_a3'),
+          getValue('gen1.voltage_v1_2'), getValue('gen1.voltage_v2_3'), getValue('gen1.voltage_v3_1'),
+          getValue('gen1.rpm'), getValue('gen1.fuel_consumption_l_min'), getValue('gen1.load_pct'),
+          getValue('gen1.coolant_temp_°c'), getValue('gen1.oil_pressure_kpa'), getValue('gen1.fuel_temp_°c'),
+          getValue('gen1.fuel_pressure_kpa'), getValue('gen1.sea_water_pressure_kpa'), getValue('gen1.oil_temperature'),
+          getValue('gen1.boost_pressure_kpa'), getValue('gen1.inlet_air_temp_°c'), getValue('gen1.engine_hours'),
+          getValue('gen1.battery_voltage'),
+          getValue('gen2.kw'), getValue('gen2.kvar'), getValue('gen2.hz'),
+          getValue('gen2.amps_a1'), getValue('gen2.amps_a2'), getValue('gen2.amps_a3'),
+          getValue('gen2.voltage_v1_2'), getValue('gen2.voltage_v2_3'), getValue('gen2.voltage_v3_1'),
+          getValue('gen2.rpm'), getValue('gen2.fuel_consumption_l_min'), getValue('gen2.load_pct'),
+          getValue('gen2.coolant_temp_°c'), getValue('gen2.oil_pressure_kpa'), getValue('gen2.fuel_temp_°c'),
+          getValue('gen2.fuel_pressure_kpa'), getValue('gen2.sea_water_pressure_kpa'), getValue('gen2.oil_temperature'),
+          getValue('gen2.boost_pressure_kpa'), getValue('gen2.inlet_air_temp_°c'), getValue('gen2.engine_hours'),
+          getValue('gen2.battery_voltage'),
+          getValue('gen3.kw'), getValue('gen3.kvar'), getValue('gen3.hz'),
+          getValue('gen3.amps_a1'), getValue('gen3.amps_a2'), getValue('gen3.amps_a3'),
+          getValue('gen3.voltage_v1_2'), getValue('gen3.voltage_v2_3'), getValue('gen3.voltage_v3_1'),
+          getValue('gen3.rpm'), getValue('gen3.fuel_consumption_l_min'), getValue('gen3.load_pct'),
+          getValue('gen3.coolant_temp_°c'), getValue('gen3.oil_pressure_kpa'), getValue('gen3.fuel_temp_°c'),
+          getValue('gen3.fuel_pressure_kpa'), getValue('gen3.sea_water_pressure_kpa'), getValue('gen3.oil_temperature'),
+          getValue('gen3.boost_pressure_kpa'), getValue('gen3.inlet_air_temp_°c'), getValue('gen3.engine_hours'),
+          getValue('gen3.battery_voltage'),
+          getValue('port.rpm'), getValue('port.fuelPressure'), getValue('port.oilTemp'),
+          getValue('port.swPressure'), getValue('port.boostPressure'), getValue('port.scavengeAir'),
+          getValue('port.leftExhaust'), getValue('port.rightExhaust'), getValue('port.exSurface'),
+          getValue('port.fuelDiff'), getValue('port.oilDiff'), getValue('port.coolantTemp'),
+          getValue('port.oilPressure'), getValue('port.transGearTemp'), getValue('port.transOilPressure'),
+          getValue('port.fuelConsumption'), getValue('port.loadPct'), getValue('port.shaftFlow'),
+          getValue('port.thrustBearingTemp'), getValue('port.exSeaWaterPress'),
+          getValue('stbd.rpm'), getValue('stbd.fuelPressure'), getValue('stbd.oilTemp'),
+          getValue('stbd.swPressure'), getValue('stbd.boostPressure'), getValue('stbd.scavengeAir'),
+          getValue('stbd.leftExhaust'), getValue('stbd.rightExhaust'), getValue('stbd.exSurface'),
+          getValue('stbd.fuelDiff'), getValue('stbd.oilDiff'), getValue('stbd.coolantTemp'),
+          getValue('stbd.oilPressure'), getValue('stbd.transGearTemp'), getValue('stbd.transOilPressure'),
+          getValue('stbd.fuelConsumption'), getValue('stbd.loadPct'), getValue('stbd.shaftFlow'),
+          getValue('stbd.thrustBearingTemp'), getValue('stbd.exSeaWaterPress'),
+          getValue('other.seaWaterTemp'), getValue('other.dayTankTemp')
         ];
         wsData.push(row);
       });
