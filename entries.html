@@ -251,6 +251,51 @@
         });
       }
 
+      // Group entries by passage (from/to ports and date proximity)
+      function groupEntriesByPassage(entries) {
+        if (entries.length === 0) return [];
+        
+        const passages = [];
+        const sortedEntries = [...entries].sort((a, b) => {
+          const dateA = new Date(a.__meta?.iso || a.date || 0);
+          const dateB = new Date(b.__meta?.iso || b.date || 0);
+          return dateA - dateB;
+        });
+        
+        let currentPassage = null;
+        
+        sortedEntries.forEach(entry => {
+          const from = entry.from || 'Unknown';
+          const to = entry.to || 'Unknown';
+          const date = entry.date || new Date(entry.__meta?.iso || Date.now()).toISOString().split('T')[0];
+          const time = entry.time || new Date(entry.__meta?.iso || Date.now()).toTimeString().split(' ')[0].substring(0, 5);
+          
+          // Check if this entry belongs to the current passage
+          if (currentPassage && 
+              currentPassage.from === from && 
+              currentPassage.to === to &&
+              Math.abs(new Date(date) - new Date(currentPassage.endDate)) <= 2 * 24 * 60 * 60 * 1000) { // Within 2 days
+            currentPassage.entries.push(entry);
+            currentPassage.endDate = date;
+            currentPassage.endTime = time;
+          } else {
+            // Start a new passage
+            currentPassage = {
+              from,
+              to,
+              startDate: date,
+              startTime: time,
+              endDate: date,
+              endTime: time,
+              entries: [entry]
+            };
+            passages.push(currentPassage);
+          }
+        });
+        
+        return passages;
+      }
+
       async function renderEntries() {
         entriesList.innerHTML = '';
         // Prefer cloud, fallback to local
@@ -277,6 +322,9 @@
           return;
         }
 
+        // Group entries by passages
+        const passages = groupEntriesByPassage(entries);
+
         const numericOptions = collectNumericFields(entries);
         const gen1Opts = numericOptions.filter(([k]) => /^gen1\./.test(k));
         const gen2Opts = numericOptions.filter(([k]) => /^gen2\./.test(k));
@@ -291,58 +339,53 @@
         renderChooser(seriesChooserStbd, stbdOpts);
         renderChooser(seriesChooserOther, otherOpts);
 
-        [...entries].reverse().forEach((entry, idx) => {
+        // Render passages instead of individual entries
+        [...passages].reverse().forEach((passage, idx) => {
           const card = document.createElement('div');
           card.className = 'card subtle';
           const header = document.createElement('div');
           header.className = 'card-header';
           const title = document.createElement('h2');
-          const dt = (entry.__meta && entry.__meta.iso) || new Date().toISOString();
-          const dateStr = new Date(dt).toLocaleString();
-          title.textContent = `Entry ${entries.length - idx} — ${dateStr}`;
+          
+          // Format passage title: "La Ciotat 1/06/25 - Dubrovnik 6/06/25"
+          const formatDate = (dateStr) => {
+            const date = new Date(dateStr);
+            return `${date.getDate()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getFullYear()).slice(-2)}`;
+          };
+          
+          const passageTitle = `${passage.from} ${formatDate(passage.startDate)} - ${passage.to} ${formatDate(passage.endDate)}`;
+          title.textContent = passageTitle;
           header.appendChild(title);
+          
+          // Add passage details
+          const details = document.createElement('div');
+          details.style.fontSize = '0.9em';
+          details.style.color = 'var(--muted)';
+          details.style.marginTop = '4px';
+          details.textContent = `${passage.entries.length} entries • ${passage.startTime} - ${passage.endTime}`;
+          header.appendChild(details);
+          
           const actions = document.createElement('div');
           actions.className = 'header-actions';
-          const loadBtn = document.createElement('button');
-          loadBtn.className = 'btn';
-          loadBtn.textContent = 'Load into Form';
-          loadBtn.addEventListener('click', () => {
-            // Save to localStorage and navigate to form. The form will auto-activate gens from data
-            localStorage.setItem('erlog:lastSubmit', JSON.stringify(entry));
-            window.location.href = './running.html?load=last&ts=' + Date.now();
-          });
-          const viewBtn = document.createElement('button');
-          viewBtn.className = 'btn secondary';
-          viewBtn.textContent = 'View JSON';
-          viewBtn.addEventListener('click', () => {
-            const pre = document.createElement('pre');
-            pre.textContent = JSON.stringify(entry, null, 2);
-            pre.style.whiteSpace = 'pre-wrap';
-            const body = document.createElement('div');
-            body.className = 'card-body';
-            body.appendChild(pre);
-            card.appendChild(body);
+          
+          // Export entire passage to Excel
+          const exportPassageBtn = document.createElement('button');
+          exportPassageBtn.className = 'btn';
+          exportPassageBtn.textContent = 'Export Passage to Excel';
+          exportPassageBtn.addEventListener('click', () => {
+            exportPassageToExcel(passage);
           });
           
-          const exportBtn = document.createElement('button');
-          exportBtn.className = 'btn';
-          exportBtn.textContent = 'Export to Excel';
-          exportBtn.addEventListener('click', () => {
-            if (window.exportEntryWithData) {
-              const filename = `er-log-entry-${entry.date || 'entry'}-${entry.time || 'time'}`;
-              if (window.exportEntryWithData(entry, filename)) {
-                alert('Entry exported to Excel with data filled in');
-              } else {
-                alert('Export failed');
-              }
-            } else {
-              alert('Export function not available');
-            }
+          // View passage details
+          const viewPassageBtn = document.createElement('button');
+          viewPassageBtn.className = 'btn secondary';
+          viewPassageBtn.textContent = 'View Entries';
+          viewPassageBtn.addEventListener('click', () => {
+            togglePassageDetails(card, passage);
           });
           
-          actions.appendChild(loadBtn);
-          actions.appendChild(viewBtn);
-          actions.appendChild(exportBtn);
+          actions.appendChild(exportPassageBtn);
+          actions.appendChild(viewPassageBtn);
           header.appendChild(actions);
           card.appendChild(header);
           entriesList.appendChild(card);
@@ -367,6 +410,258 @@
         // Main Engines: only show last clicked
         togglePortBtn.addEventListener('click', () => showOnly([chooserPortWrap, chooserStbdWrap], chooserPortWrap));
         toggleStbdBtn.addEventListener('click', () => showOnly([chooserPortWrap, chooserStbdWrap], chooserStbdWrap));
+      }
+
+      // Toggle passage details view
+      function togglePassageDetails(card, passage) {
+        const existingBody = card.querySelector('.passage-details');
+        if (existingBody) {
+          existingBody.remove();
+          return;
+        }
+        
+        const body = document.createElement('div');
+        body.className = 'card-body passage-details';
+        
+        passage.entries.forEach((entry, idx) => {
+          const entryDiv = document.createElement('div');
+          entryDiv.style.marginBottom = '12px';
+          entryDiv.style.padding = '8px';
+          entryDiv.style.border = '1px solid var(--border)';
+          entryDiv.style.borderRadius = '6px';
+          
+          const dt = (entry.__meta && entry.__meta.iso) || new Date().toISOString();
+          const dateStr = new Date(dt).toLocaleString();
+          entryDiv.innerHTML = `
+            <div style="font-weight: 600; margin-bottom: 4px;">Entry ${passage.entries.length - idx} — ${dateStr}</div>
+            <div style="font-size: 0.9em; color: var(--muted);">
+              ${entry.from || 'Unknown'} → ${entry.to || 'Unknown'} • ${entry.route || 'No route notes'}
+            </div>
+          `;
+          
+          const entryActions = document.createElement('div');
+          entryActions.style.marginTop = '8px';
+          entryActions.style.display = 'flex';
+          entryActions.style.gap = '8px';
+          
+          const loadBtn = document.createElement('button');
+          loadBtn.className = 'btn';
+          loadBtn.textContent = 'Load into Form';
+          loadBtn.style.fontSize = '0.8em';
+          loadBtn.addEventListener('click', () => {
+            localStorage.setItem('erlog:lastSubmit', JSON.stringify(entry));
+            window.location.href = './running.html?load=last&ts=' + Date.now();
+          });
+          
+          const exportBtn = document.createElement('button');
+          exportBtn.className = 'btn secondary';
+          exportBtn.textContent = 'Export Entry';
+          exportBtn.style.fontSize = '0.8em';
+          exportBtn.addEventListener('click', () => {
+            if (window.exportEntryWithData) {
+              const filename = `er-log-entry-${entry.date || 'entry'}-${entry.time || 'time'}`;
+              if (window.exportEntryWithData(entry, filename)) {
+                alert('Entry exported to Excel');
+              } else {
+                alert('Export failed');
+              }
+            }
+          });
+          
+          entryActions.appendChild(loadBtn);
+          entryActions.appendChild(exportBtn);
+          entryDiv.appendChild(entryActions);
+          body.appendChild(entryDiv);
+        });
+        
+        card.appendChild(body);
+      }
+
+      // Export entire passage to Excel with all hourly readings
+      function exportPassageToExcel(passage) {
+        try {
+          const wb = XLSX.utils.book_new();
+          
+          // Create worksheet with passage data
+          const wsData = [];
+          
+          // Header rows
+          wsData.push(['', '', '', 'Day 1', '', '', '', passage.startDate, '', '', `${passage.from} to ${passage.to}`]);
+          wsData.push(['', '', '', 'Time:', passage.startTime, 'From:', passage.from, 'To:', passage.to, '', '']);
+          wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
+          
+          // PORT main Engine header
+          wsData.push(['', 'PORT main Engine', '', '', '', '', '', '', '', '', '']);
+          wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
+          
+          // Create time columns based on entries
+          const timeColumns = passage.entries.map(entry => {
+            const dt = new Date(entry.__meta?.iso || entry.date || Date.now());
+            return dt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+          });
+          
+          // PORT main Engine parameters with time columns
+          const portParams = [
+            ['Engines Advanced (AMS)', 'RPM', 'RPM'],
+            ['', 'Fuel Pressure', 'kPa'],
+            ['', 'Oil Temperature', 'C'],
+            ['', 'S W Pressure', 'kPa'],
+            ['', 'Boost Pressure', 'kPa'],
+            ['', 'Scavange air', 'C'],
+            ['', 'Left Exhaust', 'C'],
+            ['', 'Right Exhaust', 'C'],
+            ['', 'Ex O/B Surface temp', 'C'],
+            ['', 'Fuel Differential', 'kPa'],
+            ['', 'Oil Differential', 'kPa'],
+            ['', 'Coolant Temp', 'C'],
+            ['', 'Oil Pressure', 'kPa'],
+            ['', 'Trans gear Temp', 'C'],
+            ['', 'Trans oil pressure', 'kPa'],
+            ['', 'Fuel consumption', 'l/h'],
+            ['', 'Load', '%'],
+            ['', 'Shaft Flow', 'l/min'],
+            ['', 'Thrust bearing Temp', 'C'],
+            ['', 'Ex Sea water Press', 'kPa']
+          ];
+          
+          // Add PORT parameters with data for each time
+          portParams.forEach((row, index) => {
+            const wsRow = [row[0], row[1], row[2]];
+            passage.entries.forEach(entry => {
+              const getValue = (path) => {
+                const parts = path.split('.');
+                let value = entry;
+                for (const part of parts) {
+                  if (value && typeof value === 'object') {
+                    value = value[part];
+                  } else {
+                    return '';
+                  }
+                }
+                return value || '';
+              };
+              
+              let fieldName = '';
+              if (index === 0) fieldName = 'port.rpm';
+              else if (index === 1) fieldName = 'port.fuelPressure';
+              else if (index === 2) fieldName = 'port.oilTemp';
+              else if (index === 3) fieldName = 'port.swPressure';
+              else if (index === 4) fieldName = 'port.boostPressure';
+              else if (index === 5) fieldName = 'port.scavengeAir';
+              else if (index === 6) fieldName = 'port.leftExhaust';
+              else if (index === 7) fieldName = 'port.rightExhaust';
+              else if (index === 8) fieldName = 'port.exSurface';
+              else if (index === 9) fieldName = 'port.fuelDiff';
+              else if (index === 10) fieldName = 'port.oilDiff';
+              else if (index === 11) fieldName = 'port.coolantTemp';
+              else if (index === 12) fieldName = 'port.oilPressure';
+              else if (index === 13) fieldName = 'port.transGearTemp';
+              else if (index === 14) fieldName = 'port.transOilPressure';
+              else if (index === 15) fieldName = 'port.fuelConsumption';
+              else if (index === 16) fieldName = 'port.loadPct';
+              else if (index === 17) fieldName = 'port.shaftFlow';
+              else if (index === 18) fieldName = 'port.thrustBearingTemp';
+              else if (index === 19) fieldName = 'port.exSeaWaterPress';
+              
+              wsRow.push(getValue(fieldName));
+            });
+            wsData.push(wsRow);
+          });
+          
+          // Add empty row
+          wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
+          
+          // STBD main Engine header
+          wsData.push(['', 'STBD main Engine', '', '', '', '', '', '', '', '', '']);
+          wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
+          
+          // STBD main Engine parameters with time columns
+          const stbdParams = [
+            ['Engines Advanced (AMS)', 'RPM', 'RPM'],
+            ['', 'Fuel Pressure', 'kPa'],
+            ['', 'Oil Temperature', 'C'],
+            ['', 'S W Pressure', 'kPa'],
+            ['', 'Boost Pressure', 'kPa'],
+            ['', 'Scavange air', 'C'],
+            ['', 'Left Exhaust', 'C'],
+            ['', 'Right Exhaust', 'C'],
+            ['', 'Ex O/B Surface temp', 'C'],
+            ['', 'Fuel Differential', 'kPa'],
+            ['', 'Oil Differential', 'kPa'],
+            ['', 'Coolant Temp', 'C'],
+            ['', 'Oil Pressure', 'kPa'],
+            ['', 'Trans gear Temp', 'C'],
+            ['', 'Trans oil pressure', 'kPa'],
+            ['', 'Fuel consumption', 'l/h'],
+            ['', 'Load', '%'],
+            ['', 'Shaft Flow', 'l/min'],
+            ['', 'Thrust bearing Temp', 'C'],
+            ['', 'Ex Sea water Press', 'kPa']
+          ];
+          
+          // Add STBD parameters with data for each time
+          stbdParams.forEach((row, index) => {
+            const wsRow = [row[0], row[1], row[2]];
+            passage.entries.forEach(entry => {
+              const getValue = (path) => {
+                const parts = path.split('.');
+                let value = entry;
+                for (const part of parts) {
+                  if (value && typeof value === 'object') {
+                    value = value[part];
+                  } else {
+                    return '';
+                  }
+                }
+                return value || '';
+              };
+              
+              let fieldName = '';
+              if (index === 0) fieldName = 'stbd.rpm';
+              else if (index === 1) fieldName = 'stbd.fuelPressure';
+              else if (index === 2) fieldName = 'stbd.oilTemp';
+              else if (index === 3) fieldName = 'stbd.swPressure';
+              else if (index === 4) fieldName = 'stbd.boostPressure';
+              else if (index === 5) fieldName = 'stbd.scavengeAir';
+              else if (index === 6) fieldName = 'stbd.leftExhaust';
+              else if (index === 7) fieldName = 'stbd.rightExhaust';
+              else if (index === 8) fieldName = 'stbd.exSurface';
+              else if (index === 9) fieldName = 'stbd.fuelDiff';
+              else if (index === 10) fieldName = 'stbd.oilDiff';
+              else if (index === 11) fieldName = 'stbd.coolantTemp';
+              else if (index === 12) fieldName = 'stbd.oilPressure';
+              else if (index === 13) fieldName = 'stbd.transGearTemp';
+              else if (index === 14) fieldName = 'stbd.transOilPressure';
+              else if (index === 15) fieldName = 'stbd.fuelConsumption';
+              else if (index === 16) fieldName = 'stbd.loadPct';
+              else if (index === 17) fieldName = 'stbd.shaftFlow';
+              else if (index === 18) fieldName = 'stbd.thrustBearingTemp';
+              else if (index === 19) fieldName = 'stbd.exSeaWaterPress';
+              
+              wsRow.push(getValue(fieldName));
+            });
+            wsData.push(wsRow);
+          });
+          
+          // Create worksheet
+          const ws = XLSX.utils.aoa_to_sheet(wsData);
+          
+          // Add to workbook
+          XLSX.utils.book_append_sheet(wb, ws, 'Passage Data');
+          
+          // Set column widths
+          const colWidths = [20, 25, 15, ...timeColumns.map(() => 15)];
+          ws['!cols'] = colWidths.map(w => ({ width: w }));
+          
+          // Save file
+          const filename = `passage-${passage.from}-${passage.to}-${passage.startDate}`;
+          XLSX.writeFile(wb, `${filename}-${new Date().toISOString().split('T')[0]}.xlsx`);
+          
+          alert(`Passage exported to Excel: ${passage.entries.length} entries`);
+        } catch (e) {
+          console.error('Passage export failed:', e);
+          alert('Export failed');
+        }
       }
 
       // Excel Export functionality
