@@ -177,6 +177,7 @@
   if (exportCurrentBtn) {
     exportCurrentBtn.addEventListener('click', () => {
       const formData = serializeForm(form);
+      console.log('Form data for export:', formData);
       if (exportEntryWithData(formData, 'er-log-current')) {
         toast('Current form data exported to Excel with values filled in');
       } else {
@@ -396,6 +397,7 @@
   // Export individual entry with data filled in
   function exportEntryWithData(entry, filename = 'er-log-entry') {
     try {
+      console.log('Exporting entry data:', entry);
       // Create workbook and worksheet
       const wb = XLSX.utils.book_new();
       
