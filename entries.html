@@ -423,20 +423,75 @@
           // Create worksheet with passage data
           const wsData = [];
           
-          // Header rows
-          wsData.push(['', '', '', 'Day 1', '', '', '', passage.startDate, '', '', `${passage.from} to ${passage.to}`]);
-          wsData.push(['', '', '', 'Time:', passage.startTime, 'From:', passage.from, 'To:', passage.to, '', '']);
-          wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
+          // Create time columns and organize by day
+          const entriesByDay = {};
+          passage.entries.forEach(entry => {
+            const dt = new Date(entry.__meta?.iso || entry.date || Date.now());
+            const dateKey = dt.toISOString().split('T')[0];
+            const timeStr = dt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+            
+            if (!entriesByDay[dateKey]) {
+              entriesByDay[dateKey] = [];
+            }
+            entriesByDay[dateKey].push({ entry, time: timeStr, date: dateKey });
+          });
+          
+          // Sort days
+          const sortedDays = Object.keys(entriesByDay).sort();
+          
+          // Create header rows with dynamic columns
+          const headerRow1 = ['', '', '', 'Day 1'];
+          const headerRow2 = ['', '', '', 'Time:'];
+          const headerRow3 = ['', '', '', ''];
+          
+          let currentDay = 1;
+          sortedDays.forEach((dateKey, dayIndex) => {
+            const dayEntries = entriesByDay[dateKey];
+            
+            if (dayIndex > 0) {
+              // Add blank column separator for new day
+              headerRow1.push('');
+              headerRow2.push('');
+              headerRow3.push('');
+              currentDay++;
+            }
+            
+            // Add day header
+            headerRow1.push(`Day ${currentDay}`);
+            headerRow2.push('');
+            headerRow3.push('');
+            
+            // Add time columns for this day
+            dayEntries.forEach(({ time }) => {
+              headerRow1.push('');
+              headerRow2.push(time);
+              headerRow3.push('');
+            });
+          });
+          
+          // Add route info at the end
+          headerRow1.push(`${passage.from} to ${passage.to}`);
+          headerRow2.push(`From: ${passage.from}`);
+          headerRow3.push(`To: ${passage.to}`);
+          
+          wsData.push(headerRow1);
+          wsData.push(headerRow2);
+          wsData.push(headerRow3);
           
           // PORT main Engine header
-          wsData.push(['', 'PORT main Engine', '', '', '', '', '', '', '', '', '']);
-          wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
+          const portHeaderRow = ['', 'PORT main Engine'];
+          // Fill remaining columns to match header structure
+          for (let i = 2; i < headerRow1.length; i++) {
+            portHeaderRow.push('');
+          }
+          wsData.push(portHeaderRow);
           
-          // Create time columns based on entries
-          const timeColumns = passage.entries.map(entry => {
-            const dt = new Date(entry.__meta?.iso || entry.date || Date.now());
-            return dt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-          });
+          // Empty row
+          const emptyRow = [];
+          for (let i = 0; i < headerRow1.length; i++) {
+            emptyRow.push('');
+          }
+          wsData.push(emptyRow);
           
           // PORT main Engine parameters with time columns
           const portParams = [
@@ -465,53 +520,78 @@
           // Add PORT parameters with data for each time
           portParams.forEach((row, index) => {
             const wsRow = [row[0], row[1], row[2]];
-            passage.entries.forEach(entry => {
-              const getValue = (path) => {
-                const parts = path.split('.');
-                let value = entry;
-                for (const part of parts) {
-                  if (value && typeof value === 'object') {
-                    value = value[part];
-                  } else {
-                    return '';
+            
+            // Add data for each day and entry
+            sortedDays.forEach((dateKey, dayIndex) => {
+              const dayEntries = entriesByDay[dateKey];
+              
+              if (dayIndex > 0) {
+                // Add blank column separator for new day
+                wsRow.push('');
+              }
+              
+              // Add data for each entry in this day
+              dayEntries.forEach(({ entry }) => {
+                const getValue = (path) => {
+                  const parts = path.split('.');
+                  let value = entry;
+                  for (const part of parts) {
+                    if (value && typeof value === 'object') {
+                      value = value[part];
+                    } else {
+                      return '';
+                    }
                   }
-                }
-                return value || '';
-              };
-              
-              let fieldName = '';
-              if (index === 0) fieldName = 'port.rpm';
-              else if (index === 1) fieldName = 'port.fuelPressure';
-              else if (index === 2) fieldName = 'port.oilTemp';
-              else if (index === 3) fieldName = 'port.swPressure';
-              else if (index === 4) fieldName = 'port.boostPressure';
-              else if (index === 5) fieldName = 'port.scavengeAir';
-              else if (index === 6) fieldName = 'port.leftExhaust';
-              else if (index === 7) fieldName = 'port.rightExhaust';
-              else if (index === 8) fieldName = 'port.exSurface';
-              else if (index === 9) fieldName = 'port.fuelDiff';
-              else if (index === 10) fieldName = 'port.oilDiff';
-              else if (index === 11) fieldName = 'port.coolantTemp';
-              else if (index === 12) fieldName = 'port.oilPressure';
-              else if (index === 13) fieldName = 'port.transGearTemp';
-              else if (index === 14) fieldName = 'port.transOilPressure';
-              else if (index === 15) fieldName = 'port.fuelConsumption';
-              else if (index === 16) fieldName = 'port.loadPct';
-              else if (index === 17) fieldName = 'port.shaftFlow';
-              else if (index === 18) fieldName = 'port.thrustBearingTemp';
-              else if (index === 19) fieldName = 'port.exSeaWaterPress';
-              
-              wsRow.push(getValue(fieldName));
+                  return value || '';
+                };
+                
+                let fieldName = '';
+                if (index === 0) fieldName = 'port.rpm';
+                else if (index === 1) fieldName = 'port.fuelPressure';
+                else if (index === 2) fieldName = 'port.oilTemp';
+                else if (index === 3) fieldName = 'port.swPressure';
+                else if (index === 4) fieldName = 'port.boostPressure';
+                else if (index === 5) fieldName = 'port.scavengeAir';
+                else if (index === 6) fieldName = 'port.leftExhaust';
+                else if (index === 7) fieldName = 'port.rightExhaust';
+                else if (index === 8) fieldName = 'port.exSurface';
+                else if (index === 9) fieldName = 'port.fuelDiff';
+                else if (index === 10) fieldName = 'port.oilDiff';
+                else if (index === 11) fieldName = 'port.coolantTemp';
+                else if (index === 12) fieldName = 'port.oilPressure';
+                else if (index === 13) fieldName = 'port.transGearTemp';
+                else if (index === 14) fieldName = 'port.transOilPressure';
+                else if (index === 15) fieldName = 'port.fuelConsumption';
+                else if (index === 16) fieldName = 'port.loadPct';
+                else if (index === 17) fieldName = 'port.shaftFlow';
+                else if (index === 18) fieldName = 'port.thrustBearingTemp';
+                else if (index === 19) fieldName = 'port.exSeaWaterPress';
+                
+                wsRow.push(getValue(fieldName));
+              });
             });
+            
+            // Add empty cells for route info columns
+            wsRow.push('');
+            wsRow.push('');
+            wsRow.push('');
+            
             wsData.push(wsRow);
           });
           
           // Add empty row
-          wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
+          wsData.push(emptyRow);
           
           // STBD main Engine header
-          wsData.push(['', 'STBD main Engine', '', '', '', '', '', '', '', '', '']);
-          wsData.push(['', '', '', '', '', '', '', '', '', '', '']);
+          const stbdHeaderRow = ['', 'STBD main Engine'];
+          // Fill remaining columns to match header structure
+          for (let i = 2; i < headerRow1.length; i++) {
+            stbdHeaderRow.push('');
+          }
+          wsData.push(stbdHeaderRow);
+          
+          // Empty row
+          wsData.push(emptyRow);
           
           // STBD main Engine parameters with time columns
           const stbdParams = [
@@ -540,44 +620,62 @@
           // Add STBD parameters with data for each time
           stbdParams.forEach((row, index) => {
             const wsRow = [row[0], row[1], row[2]];
-            passage.entries.forEach(entry => {
-              const getValue = (path) => {
-                const parts = path.split('.');
-                let value = entry;
-                for (const part of parts) {
-                  if (value && typeof value === 'object') {
-                    value = value[part];
-                  } else {
-                    return '';
+            
+            // Add data for each day and entry
+            sortedDays.forEach((dateKey, dayIndex) => {
+              const dayEntries = entriesByDay[dateKey];
+              
+              if (dayIndex > 0) {
+                // Add blank column separator for new day
+                wsRow.push('');
+              }
+              
+              // Add data for each entry in this day
+              dayEntries.forEach(({ entry }) => {
+                const getValue = (path) => {
+                  const parts = path.split('.');
+                  let value = entry;
+                  for (const part of parts) {
+                    if (value && typeof value === 'object') {
+                      value = value[part];
+                    } else {
+                      return '';
+                    }
                   }
-                }
-                return value || '';
-              };
-              
-              let fieldName = '';
-              if (index === 0) fieldName = 'stbd.rpm';
-              else if (index === 1) fieldName = 'stbd.fuelPressure';
-              else if (index === 2) fieldName = 'stbd.oilTemp';
-              else if (index === 3) fieldName = 'stbd.swPressure';
-              else if (index === 4) fieldName = 'stbd.boostPressure';
-              else if (index === 5) fieldName = 'stbd.scavengeAir';
-              else if (index === 6) fieldName = 'stbd.leftExhaust';
-              else if (index === 7) fieldName = 'stbd.rightExhaust';
-              else if (index === 8) fieldName = 'stbd.exSurface';
-              else if (index === 9) fieldName = 'stbd.fuelDiff';
-              else if (index === 10) fieldName = 'stbd.oilDiff';
-              else if (index === 11) fieldName = 'stbd.coolantTemp';
-              else if (index === 12) fieldName = 'stbd.oilPressure';
-              else if (index === 13) fieldName = 'stbd.transGearTemp';
-              else if (index === 14) fieldName = 'stbd.transOilPressure';
-              else if (index === 15) fieldName = 'stbd.fuelConsumption';
-              else if (index === 16) fieldName = 'stbd.loadPct';
-              else if (index === 17) fieldName = 'stbd.shaftFlow';
-              else if (index === 18) fieldName = 'stbd.thrustBearingTemp';
-              else if (index === 19) fieldName = 'stbd.exSeaWaterPress';
-              
-              wsRow.push(getValue(fieldName));
+                  return value || '';
+                };
+                
+                let fieldName = '';
+                if (index === 0) fieldName = 'stbd.rpm';
+                else if (index === 1) fieldName = 'stbd.fuelPressure';
+                else if (index === 2) fieldName = 'stbd.oilTemp';
+                else if (index === 3) fieldName = 'stbd.swPressure';
+                else if (index === 4) fieldName = 'stbd.boostPressure';
+                else if (index === 5) fieldName = 'stbd.scavengeAir';
+                else if (index === 6) fieldName = 'stbd.leftExhaust';
+                else if (index === 7) fieldName = 'stbd.rightExhaust';
+                else if (index === 8) fieldName = 'stbd.exSurface';
+                else if (index === 9) fieldName = 'stbd.fuelDiff';
+                else if (index === 10) fieldName = 'stbd.oilDiff';
+                else if (index === 11) fieldName = 'stbd.coolantTemp';
+                else if (index === 12) fieldName = 'stbd.oilPressure';
+                else if (index === 13) fieldName = 'stbd.transGearTemp';
+                else if (index === 14) fieldName = 'stbd.transOilPressure';
+                else if (index === 15) fieldName = 'stbd.fuelConsumption';
+                else if (index === 16) fieldName = 'stbd.loadPct';
+                else if (index === 17) fieldName = 'stbd.shaftFlow';
+                else if (index === 18) fieldName = 'stbd.thrustBearingTemp';
+                else if (index === 19) fieldName = 'stbd.exSeaWaterPress';
+                
+                wsRow.push(getValue(fieldName));
+              });
             });
+            
+            // Add empty cells for route info columns
+            wsRow.push('');
+            wsRow.push('');
+            wsRow.push('');
+            
             wsData.push(wsRow);
           });
           
@@ -588,7 +686,30 @@
           XLSX.utils.book_append_sheet(wb, ws, 'Passage Data');
           
           // Set column widths
-          const colWidths = [20, 25, 15, ...timeColumns.map(() => 15)];
+          const colWidths = [];
+          colWidths.push(20); // Column A (empty)
+          colWidths.push(25); // Column B (parameter labels)
+          colWidths.push(15); // Column C (units)
+          
+          // Add widths for each day and entry
+          sortedDays.forEach((dateKey, dayIndex) => {
+            const dayEntries = entriesByDay[dateKey];
+            
+            if (dayIndex > 0) {
+              colWidths.push(10); // Blank separator column
+            }
+            
+            colWidths.push(15); // Day header column
+            dayEntries.forEach(() => {
+              colWidths.push(15); // Data column for each entry
+            });
+          });
+          
+          // Add widths for route info columns
+          colWidths.push(20); // Route info
+          colWidths.push(20); // From info
+          colWidths.push(20); // To info
+          
           ws['!cols'] = colWidths.map(w => ({ width: w }));
           
           // Save file
