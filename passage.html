@@ -63,13 +63,12 @@
 
       let currentPassage = null;
 
-      // Get passage data from URL parameters
-      function getPassageFromURL() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const passageData = urlParams.get('passage');
+      // Get passage data from localStorage
+      function getPassageFromStorage() {
+        const passageData = localStorage.getItem('erlog:currentPassage');
         if (passageData) {
           try {
-            return JSON.parse(decodeURIComponent(passageData));
+            return JSON.parse(passageData);
           } catch (e) {
             console.error('Failed to parse passage data:', e);
             return null;
@@ -644,7 +643,7 @@
 
       // Initialize page
       function init() {
-        currentPassage = getPassageFromURL();
+        currentPassage = getPassageFromStorage();
         
         if (!currentPassage) {
           alert('No passage data found. Redirecting to entries page.');

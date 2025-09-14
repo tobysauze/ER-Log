@@ -381,9 +381,9 @@
           viewPassageBtn.className = 'btn secondary';
           viewPassageBtn.textContent = 'View Entries';
           viewPassageBtn.addEventListener('click', () => {
-            // Navigate to dedicated passage page
-            const passageData = encodeURIComponent(JSON.stringify(passage));
-            window.location.href = `./passage.html?passage=${passageData}`;
+            // Store passage data in localStorage to avoid URL length issues
+            localStorage.setItem('erlog:currentPassage', JSON.stringify(passage));
+            window.location.href = './passage.html';
           });
           
           actions.appendChild(exportPassageBtn);
